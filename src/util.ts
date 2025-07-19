@@ -2,7 +2,11 @@ export const clamp = (min: number, max: number, value: number) =>
 	Math.min(max, Math.max(min, value));
 
 // Helper function to interpolate between colors (lerp = "linear interpolation")
-export const lerpColor = (color1: number, color2: number, t: number): number => {
+export const lerpColor = (
+	color1: number,
+	color2: number,
+	t: number,
+): number => {
 	const r1 = (color1 >> 16) & 0xff;
 	const g1 = (color1 >> 8) & 0xff;
 	const b1 = color1 & 0xff;

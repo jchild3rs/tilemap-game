@@ -1,15 +1,9 @@
-import {
-	computed,
-	effect,
-	signal,
-} from '@preact/signals-core';
-import { Container, Graphics, type Ticker } from 'pixi.js';
-import { CELL_SIZE } from './config.ts';
-import { Tilemap } from './tilemap.ts';
-import {
-	MovementDirection,
-	type PositionLiteral,
-} from './types.ts';
+import { computed, effect, signal } from "@preact/signals-core";
+import { Container, Graphics, type Ticker } from "pixi.js";
+import { CELL_SIZE } from "./config.ts";
+import { Ground } from "./ground.ts";
+import { Tilemap } from "./tilemap.ts";
+import { MovementDirection, type PositionLiteral } from "./types.ts";
 
 type PawnState = "working" | "drafted";
 
@@ -37,28 +31,51 @@ export class Pawn {
 	readonly $jobQueue = signal([]);
 	readonly $isSelected = signal(false);
 
+	readonly $movementSpeedBase = signal(1);
+	readonly $movementSpeed = computed(() => {
+		const tile = this.tilemap.getTileAtPosition(this.$position.value);
+
+		return tile
+			? Ground.groundWalkSpeedMap[tile.ground.groundType]
+			: this.$movementSpeedBase.value;
+	});
+
 	readonly $hasFlowField = computed(() => this.$flowField.value !== null);
 	readonly $isDrafted = computed(() => this.$state.value === "drafted");
 	readonly $isWorking = computed(() => this.$state.value === "working");
-	readonly $isWandering = computed(() => this.$state.value === "working" && this.$jobQueue.value.length === 0);
-	readonly $hasPath = computed(() => this.$movementPaths.value.length > 0 && this.$movementPaths.value[this.$currentPathIndex.value]?.length > 0);
-	readonly $isAtDestination = computed(
-		() => {
-			const paths = this.$movementPaths.value;
-			const pathIndex = this.$currentPathIndex.value;
-			const stepIndex = this.$currentPathStepIndex.value;
-
-			if (pathIndex >= paths.length) return true;
-			if (!paths[pathIndex]) return true;
-
-			return stepIndex >= paths[pathIndex].length && pathIndex >= paths.length - 1;
-		}
+	readonly $isWandering = computed(
+		() => this.$state.value === "working" && this.$jobQueue.value.length === 0,
 	);
+	readonly $hasPath = computed(
+		() =>
+			this.$movementPaths.value.length > 0 &&
+			this.$movementPaths.value[this.$currentPathIndex.value]?.length > 0,
+	);
+	readonly $isAtDestination = computed(() => {
+		const paths = this.$movementPaths.value;
+		const pathIndex = this.$currentPathIndex.value;
+		const stepIndex = this.$currentPathStepIndex.value;
+
+		if (pathIndex >= paths.length) return true;
+		if (!paths[pathIndex]) return true;
+
+		return (
+			stepIndex >= paths[pathIndex].length && pathIndex >= paths.length - 1
+		);
+	});
 	readonly $shouldShowPath = computed(
 		() =>
-			this.$isDrafted.value && this.$hasPath.value && !this.$isAtDestination.value,
+			this.$isDrafted.value &&
+			this.$hasPath.value &&
+			!this.$isAtDestination.value,
 	);
 	readonly $shouldShowWeapon = computed(() => this.$isDrafted.value);
+
+	readonly $isUnderWater = computed(() => {
+		const pos = this.$position.value;
+		const tile = this.tilemap.getTileAtPosition(pos);
+		return tile?.ground.groundType === "water";
+	});
 
 	// PIXI objects
 	public readonly container = new Container({ label: "Pawn Container" });
@@ -115,6 +132,23 @@ export class Pawn {
 			}),
 		);
 
+		this.cleanupEffects.push(
+			effect(() => {
+				const head = this.graphic.getChildByLabel("Head");
+				const torso = this.graphic.getChildByLabel("Torso");
+				const legs = this.graphic.getChildByLabel("Legs");
+				if (head) {
+					head.y = this.$isUnderWater.value ? 4 : 0;
+				}
+				if (torso) {
+					torso.visible = !this.$isUnderWater.value;
+				}
+				if (legs) {
+					legs.visible = !this.$isUnderWater.value;
+				}
+			}),
+		);
+
 		// Update weapon visibility
 		this.cleanupEffects.push(
 			effect(() => {
@@ -161,7 +195,6 @@ export class Pawn {
 							break;
 					}
 				}
-
 			}),
 		);
 
@@ -171,16 +204,15 @@ export class Pawn {
 				const head = this.graphic.getChildByLabel("Head");
 				const leftEye = head?.getChildByLabel("Left Eye");
 				const rightEye = head?.getChildByLabel("Right Eye");
-				const direction = this.$direction.value
+				const direction = this.$direction.value;
 				if (leftEye && rightEye) {
 					if (this.$isDrafted.value) {
 						leftEye.position.set(0, 0);
 						rightEye.position.set(0, 0);
-
 					} else if (direction.includes("right")) {
 						leftEye.position.set(CELL_SIZE / 5, 0);
 						rightEye.position.set(0, 0);
-					} else if(direction.includes( "left")) {
+					} else if (direction.includes("left")) {
 						rightEye.position.set(-CELL_SIZE / 5, 0);
 						leftEye.position.set(0, 0);
 					} else {
@@ -282,7 +314,10 @@ export class Pawn {
 			this.$position.value = { x: targetX, y: targetY };
 			this.$currentPathStepIndex.value += 1;
 		} else {
-			const gameSpeed = time.speed * (this.$isWandering.value ? 2 : 4);
+			const gameSpeed =
+				time.speed *
+				this.$movementSpeed.value *
+				(this.$isWandering.value ? 2 : 4);
 			const moveDistance = Math.min(gameSpeed * time.deltaTime, distance);
 
 			const dirX = dx / distance;
@@ -369,16 +404,12 @@ export class Pawn {
 		const paths = this.$movementPaths.value;
 		if (paths.length === 0) return;
 
-		console.log('handleDestinationReached()')
-
 		for (const path of paths) {
 			for (let i = 0; i < path.length; i++) {
 				const [x, y] = path[i];
 				this.tilemap.grid.setWalkableAt(x, y, true);
 			}
 		}
-
-		console.log({ paths })
 
 		this.$isMoving.value = false;
 		this.$currentPathIndex.value = 0;
@@ -484,7 +515,8 @@ export class Pawn {
 
 	private createDestinationGraphic(pathIndex: number): Graphics {
 		const isCurrentPath = pathIndex === this.$currentPathIndex.value;
-		const isFinalDestination = pathIndex === this.$movementPaths.value.length - 1;
+		const isFinalDestination =
+			pathIndex === this.$movementPaths.value.length - 1;
 
 		let graphic: Graphics;
 
@@ -492,7 +524,7 @@ export class Pawn {
 			// Final destination - larger, more prominent
 			graphic = new Graphics({
 				label: `destination-final-${pathIndex}`,
-				alpha: 0.8
+				alpha: 0.8,
 			})
 				.circle(CELL_SIZE / 2, CELL_SIZE / 2, CELL_SIZE * 0.4)
 				.stroke({ width: 3, color: 0xffffff, alpha: 0.8 })
@@ -503,18 +535,18 @@ export class Pawn {
 			const waypointNumber = pathIndex + 1;
 			graphic = new Graphics({
 				label: `destination-waypoint-${pathIndex}`,
-				alpha: isCurrentPath ? 0.8 : 0.5
+				alpha: isCurrentPath ? 0.8 : 0.5,
 			})
 				.circle(CELL_SIZE / 2, CELL_SIZE / 2, CELL_SIZE * 0.3)
 				.stroke({
 					width: 2,
 					color: isCurrentPath ? 0xffff00 : 0xaaaaaa,
-					alpha: isCurrentPath ? 0.8 : 0.5
+					alpha: isCurrentPath ? 0.8 : 0.5,
 				})
 				.circle(CELL_SIZE / 2, CELL_SIZE / 2, CELL_SIZE * 0.2)
 				.fill({
 					color: isCurrentPath ? 0xffff00 : 0xaaaaaa,
-					alpha: 0.3
+					alpha: 0.3,
 				});
 
 			// Add number text for waypoints (simplified representation with a small dot pattern)
@@ -530,7 +562,8 @@ export class Pawn {
 				const dotX = centerX + Math.cos(angle) * radius;
 				const dotY = centerY + Math.sin(angle) * radius;
 
-				graphic.circle(dotX, dotY, dotSize)
+				graphic
+					.circle(dotX, dotY, dotSize)
 					.fill({ color: isCurrentPath ? 0x000000 : 0x666666, alpha: 0.8 });
 			}
 		}
@@ -540,7 +573,7 @@ export class Pawn {
 
 	private updateDestinationGraphics() {
 		// Clear existing destination graphics
-		this.destinationGraphics.forEach(graphic => {
+		this.destinationGraphics.forEach((graphic) => {
 			if (graphic.parent) {
 				graphic.parent.removeChild(graphic);
 			}
@@ -569,7 +602,6 @@ export class Pawn {
 	}
 
 	private updatePathGraphics() {
-		console.log('updatePathGraphics()')
 		const paths = this.$movementPaths.value;
 		if (paths.length === 0) {
 			this.hidePath();
@@ -608,12 +640,20 @@ export class Pawn {
 				width = 2;
 			}
 
+			// Only draw the part of the path that hasn't been traversed yet
+			const startIndex = isCurrentPath ? this.$currentPathStepIndex.value : 0;
+
+			if (startIndex >= path.length) return; // Skip if entire path has been traversed
+
+			// Move to the current position on the path
 			this.pathGraphic.moveTo(
-				path[0][0] * CELL_SIZE + CELL_SIZE / 2,
-				path[0][1] * CELL_SIZE + CELL_SIZE / 2,
+				path[startIndex][0] * CELL_SIZE + CELL_SIZE / 2,
+				path[startIndex][1] * CELL_SIZE + CELL_SIZE / 2,
 			);
 
-			for (const [x, y] of path) {
+			// Draw lines only for the remaining steps
+			for (let i = startIndex; i < path.length; i++) {
+				const [x, y] = path[i];
 				this.pathGraphic.lineTo(
 					x * CELL_SIZE + CELL_SIZE / 2,
 					y * CELL_SIZE + CELL_SIZE / 2,
@@ -637,7 +677,7 @@ export class Pawn {
 		this.pathGraphic.clear();
 
 		// Hide all destination graphics
-		this.destinationGraphics.forEach(graphic => {
+		this.destinationGraphics.forEach((graphic) => {
 			if (graphic.parent) {
 				graphic.parent.removeChild(graphic);
 			}
@@ -657,6 +697,13 @@ export class Pawn {
 		// Set initial position
 		const pos = this.$position.value;
 		this.container.position.set(pos.x, pos.y);
+
+		this.container.interactive = true;
+		this.container.on("click", () => {
+			if (!this.$isDrafted.value) {
+				this.setSelected(!this.$isSelected.value);
+			}
+		});
 	}
 
 	static generateSkinColor() {
@@ -749,7 +796,6 @@ export class Pawn {
 				.fill(0x000000),
 		);
 
-
 		const gunHeight = CELL_SIZE / 6;
 		const gunWidth = CELL_SIZE;
 		const gunStartX = CELL_SIZE / 2;
@@ -819,11 +865,11 @@ export class Pawn {
 	// Cleanup method to call when pawn is destroyed
 	destroy() {
 		// Clean up reactive effects
-		this.cleanupEffects.forEach(cleanup => cleanup());
+		this.cleanupEffects.forEach((cleanup) => cleanup());
 		this.cleanupEffects.length = 0;
 
 		// Clean up destination graphics
-		this.destinationGraphics.forEach(graphic => {
+		this.destinationGraphics.forEach((graphic) => {
 			if (graphic.parent) {
 				graphic.parent.removeChild(graphic);
 			}

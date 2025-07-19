@@ -1,12 +1,14 @@
+const worldSizeInTiles = 24;
+
 /**
  * Viewport width in cells
  */
-export const WORLD_WIDTH = 24;
+export const WORLD_WIDTH = worldSizeInTiles;
 
 /**
  * Viewport height in cells
  */
-export const WORLD_HEIGHT = 24;
+export const WORLD_HEIGHT = worldSizeInTiles;
 
 /**
  * Cell size in pixels

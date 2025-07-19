@@ -1,6 +1,6 @@
-import type { Node } from "pathfinding";
 import type { Graphics } from "pixi.js";
 import type { Ground } from "./ground.ts";
+import type { Node } from "./pathfinding/node.ts";
 
 export class Tile {
 	constructor(

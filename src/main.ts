@@ -2,7 +2,6 @@ import { effect } from '@preact/signals-core';
 import { Viewport } from 'pixi-viewport';
 import {
 	Application,
-	Assets,
 	ColorMatrixFilter,
 	Container,
 	Graphics,
@@ -18,7 +17,7 @@ import { Pawn } from './pawn.ts';
 import { GameState } from './state.ts';
 import { Tilemap } from './tilemap.ts';
 import { GameUI } from './ui.ts';
-import { lerpColor } from './utils.ts';
+import { lerpColor } from './util.ts';
 
 async function main() {
 	const app = new Application();
@@ -43,9 +42,9 @@ async function main() {
 		autoDensity: true,
 	});
 
-	const assetsToLoad = ["grass.jpg", "brick.png"];
-	await Assets.init({ basePath: "/assets" });
-	await Assets.load(assetsToLoad);
+	// const assetsToLoad = ["grass.jpg", "brick.png"];
+	// await Assets.init({ basePath: "/assets" });
+	// const textureMap = await Assets.load(assetsToLoad);
 
 	const viewport = app.stage.addChild(
 		new Viewport({
@@ -67,11 +66,29 @@ async function main() {
 			.moveCenter(WORLD_SIZE.width / 2, WORLD_SIZE.height / 2),
 	);
 
-	const gameState = new GameState();
-	const gameUI = new GameUI(gameState);
-	console.log(gameUI);
 	const tilemap = new Tilemap(viewport);
-	new Controls(viewport, tilemap, app.ticker, gameTicker, gameState);
+	const gameState = new GameState(tilemap);
+	const gameUI = new GameUI(gameState);
+	const controls = new Controls(
+		viewport,
+		tilemap,
+		gameTicker,
+		app.ticker,
+		gameState,
+	);
+
+	const game = {
+		state: gameState,
+		ui: gameUI,
+		tilemap,
+		viewport,
+		app,
+		gameTicker,
+		gameUI,
+		controls,
+	};
+
+	console.log(game);
 
 	effect(() => {
 		if (gameState.isPaused.value) {
@@ -110,12 +127,11 @@ async function main() {
 		const isNight = gameState.isNight.value;
 
 		// // Debug logging - remove after confirming it works
-		// console.debug('Lighting effect triggered:', {
-		// 	gameElapsedTime,
-		// 	timeOfDay,
-		// 	lightLevel,
-		// 	isNight,
-		// });
+		console.debug("Lighting effect triggered:", {
+			timeOfDay,
+			lightLevel,
+			isNight,
+		});
 
 		// Basic overlay darkness
 		const overlayAlpha = Math.max(0, 0.5 * (1 - lightLevel));
@@ -170,14 +186,13 @@ async function main() {
 		}
 	});
 
-
 	// test code below
 	// -------------------------------
 
-	// add a bunch of random walls
+	// // add a bunch of random walls
 	// const blockingTiles = viewport.addChild(new Container({ label: "Walls" }));
 	//
-	// for (let i = 0; i < (WORLD_WIDTH * WORLD_HEIGHT) / 3; i++) {
+	// for (let i = 0; i < (WORLD_WIDTH * WORLD_HEIGHT) / 9; i++) {
 	// 	const randomWallPosition = tilemap.randomGridPosition("wall");
 	// 	blockingTiles.addChild(
 	// 		tilemap.makeBlockingTile(randomWallPosition.x, randomWallPosition.y),
@@ -185,11 +200,10 @@ async function main() {
 	// }
 
 	const pawnContainer = viewport.addChild(new Container({ label: "Pawns" }));
-	for (let i = 0; i < 1; i++) {
+	for (let i = 0; i < 2; i++) {
 		const pawn = new Pawn(tilemap, pawnContainer, gameTicker);
 		gameState.addPawn(pawn);
 	}
 }
 
 main().catch(console.error);
-
