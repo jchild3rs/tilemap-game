@@ -30,7 +30,7 @@ export class Tilemap {
 				eventMode: "none",
 			})
 				.rect(0, 0, this.viewport.worldWidth, this.viewport.worldHeight)
-				.fill('white'),
+				.fill("white"),
 		);
 
 		for (let row = 0; row < WORLD_WIDTH; row++) {
@@ -53,8 +53,8 @@ export class Tilemap {
 							pixelLine: true,
 							alignment: 1,
 						})
-					// .fill('white')
-					.fill(Ground.groundColorMap[ground.type]),
+						// .fill('white')
+						.fill(Ground.groundColorMap[ground.type]),
 				);
 				// graphic.alpha = 0.5;
 				//

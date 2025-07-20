@@ -1,23 +1,27 @@
-import { effect } from '@preact/signals-core';
-import { Viewport } from 'pixi-viewport';
+import { effect } from "@preact/signals-core";
+import { Viewport } from "pixi-viewport";
 import {
 	Application,
+	Assets,
 	ColorMatrixFilter,
 	Container,
 	Graphics,
 	Ticker,
-} from 'pixi.js';
+} from "pixi.js";
 import {
 	MAX_ZOOM_SCALE,
 	MIN_ZOOM_SCALE,
+	WORLD_HEIGHT,
 	WORLD_SIZE,
-} from './config.ts';
-import { Controls } from './controls.ts';
-import { Pawn } from './pawn.ts';
-import { GameState } from './state.ts';
-import { Tilemap } from './tilemap.ts';
-import { GameUI } from './ui.ts';
-import { lerpColor } from './util.ts';
+	WORLD_WIDTH,
+} from "./config.ts";
+import { Controls } from "./controls.ts";
+import { Pawn } from "./pawn.ts";
+import { GameState } from "./state.ts";
+import { Tilemap } from "./tilemap.ts";
+import { Tree } from "./tree.ts";
+import { GameUI } from "./ui.ts";
+import { lerpColor } from "./util.ts";
 
 async function main() {
 	const app = new Application();
@@ -32,19 +36,19 @@ async function main() {
 
 	await app.init({
 		antialias: true,
-		resolution: window.devicePixelRatio,
 		autoStart: true,
 		backgroundColor: 0x000000,
 		canvas,
+		resolution: window.devicePixelRatio,
 		height: window.innerHeight,
 		width: window.innerWidth,
 		resizeTo: window,
 		autoDensity: true,
 	});
 
-	// const assetsToLoad = ["grass.jpg", "brick.png"];
-	// await Assets.init({ basePath: "/assets" });
-	// const textureMap = await Assets.load(assetsToLoad);
+	const assetsToLoad = ["tree.png"];
+	await Assets.init({ basePath: "/assets" });
+	const textureMap = await Assets.load(assetsToLoad);
 
 	const viewport = app.stage.addChild(
 		new Viewport({
@@ -109,14 +113,14 @@ async function main() {
 		eventMode: "none",
 		interactiveChildren: false,
 	})
-		.rect(0, 0, viewport.worldWidth, viewport.worldHeight)
+		.rect(0, 0, viewport.screenWidth, viewport.screenHeight)
 		.fill({ color: 0x0a0a2e, alpha: 1 });
 
 	// Create color matrix filter
 	const dayNightFilter = new ColorMatrixFilter();
 
 	// Apply both overlay and filter to viewport
-	viewport.addChild(dayNightOverlay);
+	app.stage.addChild(dayNightOverlay);
 	// viewport.filters = [dayNightFilter];
 	tilemap.container.filters = [dayNightFilter];
 
@@ -189,20 +193,33 @@ async function main() {
 	// test code below
 	// -------------------------------
 
-	// // add a bunch of random walls
-	// const blockingTiles = viewport.addChild(new Container({ label: "Walls" }));
-	//
-	// for (let i = 0; i < (WORLD_WIDTH * WORLD_HEIGHT) / 9; i++) {
-	// 	const randomWallPosition = tilemap.randomGridPosition("wall");
-	// 	blockingTiles.addChild(
-	// 		tilemap.makeBlockingTile(randomWallPosition.x, randomWallPosition.y),
-	// 	);
-	// }
+	// add a bunch of random walls
+	const blockingTiles = viewport.addChild(new Container({ label: "Walls" }));
+
+	for (let i = 0; i < (WORLD_WIDTH * WORLD_HEIGHT) / 9; i++) {
+		const randomWallPosition = tilemap.randomGridPosition("wall");
+		blockingTiles.addChild(
+			tilemap.makeBlockingTile(randomWallPosition.x, randomWallPosition.y),
+		);
+	}
 
 	const pawnContainer = viewport.addChild(new Container({ label: "Pawns" }));
-	for (let i = 0; i < 2; i++) {
+	// window.pawns = []
+	for (let i = 0; i < 20; i++) {
 		const pawn = new Pawn(tilemap, pawnContainer, gameTicker);
 		gameState.addPawn(pawn);
+		// console.log(pawn)
+		// pawns.push(pawn)
+	}
+
+	const fauna = viewport.addChild(new Container({ label: "Fauna" }));
+	const _treeYPositions: number[] = [];
+	for (let i = 0; i < 50; i++) {
+		const _tree = new Tree(fauna, tilemap, textureMap);
+		// treeYPositions.push(tree.container.y)
+
+		// make sure zIndex is sorted by y low to high
+		// tree.container.zIndex = treeYPositions.length - i
 	}
 }
 

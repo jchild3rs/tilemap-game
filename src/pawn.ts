@@ -2,6 +2,7 @@ import { computed, effect, signal } from "@preact/signals-core";
 import { Container, Graphics, type Ticker } from "pixi.js";
 import { CELL_SIZE } from "./config.ts";
 import { Ground } from "./ground.ts";
+import { HealthBar } from "./health-bar.ts";
 import { Tilemap } from "./tilemap.ts";
 import { MovementDirection, type PositionLiteral } from "./types.ts";
 
@@ -18,6 +19,31 @@ export class Pawn {
 		"#6e4c29",
 		"#51391e",
 	];
+
+	readonly $maxHealth = signal(100);
+	readonly $damage = signal(0);
+
+	public damage(amount: number) {
+		this.$damage.value += amount;
+
+		if (this.$damage.value > this.$maxHealth.value) {
+			if (this.$isDrafted.value) {
+				this.undraft();
+			}
+		}
+	}
+
+	readonly $health = computed(() => {
+		const maxHealth = this.$maxHealth.value;
+		const damage = this.$damage.value;
+		return maxHealth - damage;
+	});
+
+	readonly $healthStatus = computed<"alive" | "dead">(() => {
+		const health = this.$health.value;
+		if (health <= 0) return "dead";
+		return "alive";
+	});
 
 	readonly $flowField = signal<number[][][] | null>(null);
 	readonly $flowFieldTarget = signal<PositionLiteral | null>(null);
@@ -92,12 +118,14 @@ export class Pawn {
 
 	private tickerCallback: (time: Ticker) => void = () => {};
 	private cleanupEffects: Array<() => void> = [];
+	private healthBar: HealthBar;
 
 	constructor(
 		private readonly tilemap: Tilemap,
 		private readonly viewport: Container,
 		private readonly ticker: Ticker,
 	) {
+		this.healthBar = new HealthBar(this.$health, this.container);
 		this.setupInitialState();
 		this.setupReactiveEffects();
 		this.setupMovementLoop();
@@ -128,15 +156,53 @@ export class Pawn {
 		// Update highlight based on selection
 		this.cleanupEffects.push(
 			effect(() => {
+				if (this.$healthStatus.value === "dead") {
+					return;
+				}
 				this.highlight.alpha = this.$isSelected.value ? 1 : 0;
 			}),
 		);
 
 		this.cleanupEffects.push(
 			effect(() => {
-				const head = this.graphic.getChildByLabel("Head");
-				const torso = this.graphic.getChildByLabel("Torso");
-				const legs = this.graphic.getChildByLabel("Legs");
+				if (this.$healthStatus.value === "dead") {
+					return;
+				}
+				this.healthBar.healthBarGraphic.visible =
+					this.$isSelected.value || this.$isDrafted.value;
+			}),
+		);
+
+		this.cleanupEffects.push(
+			effect(() => {
+				if (this.$healthStatus.value === "dead") {
+					// rotate pawn and place at bottom of cell
+					this.container.rotation = Math.PI / 2;
+					this.container.x += CELL_SIZE;
+				}
+			}),
+		);
+
+		this.cleanupEffects.push(
+			effect(() => {
+				if (this.$healthStatus.value === "dead") {
+					this.$isMoving.value = false;
+				}
+			}),
+		);
+
+		this.cleanupEffects.push(
+			effect(() => {
+				const head = this.graphic.getChildByLabel("Head")!;
+				const torso = this.graphic.getChildByLabel("Torso")!;
+				const legs = this.graphic.getChildByLabel("Legs")!;
+
+				if (this.$healthStatus.value === "dead") {
+					torso.visible = true;
+					legs.visible = true;
+					return;
+				}
+
 				if (head) {
 					head.y = this.$isUnderWater.value ? 4 : 0;
 				}
@@ -152,6 +218,10 @@ export class Pawn {
 		// Update weapon visibility
 		this.cleanupEffects.push(
 			effect(() => {
+				if (this.$healthStatus.value === "dead") {
+					return;
+				}
+
 				const gun = this.graphic.getChildByLabel("Gun");
 				if (gun) {
 					gun.visible = this.$shouldShowWeapon.value;
@@ -202,8 +272,18 @@ export class Pawn {
 		this.cleanupEffects.push(
 			effect(() => {
 				const head = this.graphic.getChildByLabel("Head");
-				const leftEye = head?.getChildByLabel("Left Eye");
-				const rightEye = head?.getChildByLabel("Right Eye");
+				const leftEye = head?.getChildByLabel("Left Eye")!;
+				const rightEye = head?.getChildByLabel("Right Eye")!;
+				const deadEyes = head?.getChildByLabel("Dead Eyes")!;
+
+				if (this.$healthStatus.value === "dead") {
+					deadEyes.visible = true;
+					leftEye.visible = false;
+					rightEye.visible = false;
+
+					return;
+				}
+
 				const direction = this.$direction.value;
 				if (leftEye && rightEye) {
 					if (this.$isDrafted.value) {
@@ -226,6 +306,17 @@ export class Pawn {
 		// Update path visibility
 		this.cleanupEffects.push(
 			effect(() => {
+				// heal
+			}),
+		);
+
+		// Update path visibility
+		this.cleanupEffects.push(
+			effect(() => {
+				if (this.$healthStatus.value === "dead") {
+					return;
+				}
+
 				if (this.$shouldShowPath.value) {
 					this.updatePathGraphics();
 				} else {
@@ -237,6 +328,10 @@ export class Pawn {
 		// Update container position
 		this.cleanupEffects.push(
 			effect(() => {
+				if (this.$healthStatus.value === "dead") {
+					return;
+				}
+
 				const pos = this.$position.value;
 				this.container.position.set(pos.x, pos.y);
 			}),
@@ -783,6 +878,30 @@ export class Pawn {
 		);
 
 		// Eyes
+		const crossSizeInPixels = 3;
+		const deadEyes = headContainer.addChild(
+			new Container({ label: "Dead Eyes", visible: false }),
+		);
+		const deadLeftEye = deadEyes.addChild(new Graphics());
+		deadLeftEye
+			.lineTo(crossSizeInPixels, crossSizeInPixels)
+			.moveTo(crossSizeInPixels, 0)
+			.lineTo(crossSizeInPixels, 0)
+			.moveTo(0, crossSizeInPixels)
+			.lineTo(crossSizeInPixels, 0)
+			.stroke({ width: 1, color: "black" });
+		deadLeftEye.position.set(CELL_SIZE / 2 - CELL_SIZE / 8, CELL_SIZE / 4);
+
+		const deadRightEye = deadEyes.addChild(new Graphics());
+		deadRightEye
+			.lineTo(crossSizeInPixels, crossSizeInPixels)
+			.moveTo(crossSizeInPixels, 0)
+			.lineTo(crossSizeInPixels, 0)
+			.moveTo(0, crossSizeInPixels)
+			.lineTo(crossSizeInPixels, 0)
+			.stroke({ width: 1, color: "black" });
+		deadRightEye.position.set(CELL_SIZE / 2, CELL_SIZE / 4);
+
 		const leftEye = headContainer.addChild(
 			new Graphics({ label: "Left Eye" })
 				.circle(CELL_SIZE / 2 - CELL_SIZE / 16, CELL_SIZE / 4, CELL_SIZE / 24)

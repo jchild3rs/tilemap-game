@@ -42,7 +42,7 @@ export class Ground {
 			return "water";
 		}
 
-		return "dirt"
+		return "dirt";
 	}
 
 	static makeRandomGround() {
