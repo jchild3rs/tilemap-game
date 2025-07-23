@@ -1,62 +1,62 @@
-// systems/TilemapRenderSystem.ts
-import type { GridPositionComponent } from "../components/grid-position.ts";
-import type { TileRenderComponent } from "../components/tile-render.ts";
-import type { TileComponent } from "../components/tile.ts";
-import { GameConfig } from "../config.ts";
-import type { Entity, EntityManager } from "../entity-manager.ts";
-
+import { Effect } from "effect";
+import * as PIXI from "pixi.js";
+import { Config } from "../app/config.ts";
+import { EntityManager } from "../app/entity-manager.ts";
+import { Tilemap } from "../app/tilemap.ts";
+import { Viewport } from "../app/viewport.ts";
+import { PositionConversion } from "../services/position-conversion.ts";
 import type { System } from "../types.ts";
 
-export class TilemapRenderSystem implements System {
-	constructor(
-		private entityManager: EntityManager,
-		private config = GameConfig.getInstance(),
-	) {
-		const mapEntity = this.getMapEntity();
-		if (!mapEntity) return;
+export const TilemapRenderSystem = Effect.gen(function* () {
+	const viewport = yield* Viewport;
+	const config = yield* Config;
+	const container = viewport.addChild(new PIXI.Container({ label: "Tilemap" }));
 
-		const entities = this.entityManager.getAllEntitiesWithComponents([
-			"Tile",
-			"GridPosition",
-			"TileRender",
-		]);
-		console.log({ entities });
+	for (let row = 0; row < config.WORLD_SIZE; row++) {
+		for (let col = 0; col < config.WORLD_SIZE; col++) {
+			const tileGraphic = container.addChild(
+				new PIXI.Graphics({ label: `Tile ${row},${col}`, eventMode: "none" })
+					.rect(0, 0, config.CELL_SIZE, config.CELL_SIZE)
+					.stroke({
+						width: 1,
+						color: 0xffffff,
+						alpha: 0.5,
+						pixelLine: true,
+						alignment: 1,
+					}),
+			);
 
-		for (const entity of entities) {
-			const gridPos =
-				entity.getComponent<GridPositionComponent>("GridPosition");
-			const render = entity.getComponent<TileRenderComponent>("TileRender");
-			const tile = entity.getComponent<TileComponent>("Tile");
-
-			// Update tile appearance based on ground type
-			render.graphic
-				.rect(
-					gridPos.x * this.config.CELL_SIZE,
-					gridPos.y * this.config.CELL_SIZE,
-					this.config.CELL_SIZE,
-					this.config.CELL_SIZE,
-				)
-				.stroke({
-					width: 1,
-					color: 0xffffff,
-					alpha: 0.1,
-					pixelLine: true,
-					alignment: 1,
-				})
-				.fill(this.getGroundColor(tile.groundType));
+			tileGraphic.position.set(col * config.CELL_SIZE, row * config.CELL_SIZE);
 		}
 	}
 
-	update(): void {
-		//
-	}
+	const update = (_ticker: PIXI.Ticker) => Effect.succeed(undefined);
 
-	private getMapEntity(): Entity | undefined {
-		return this.entityManager.getAllEntitiesWithComponents(["Map"])[0];
-	}
+	return { update } as const satisfies System;
+});
 
-	private getGroundColor(groundType: string): number {
-		// Get color from config or use default
-		return this.config.ground.colorMap[groundType] || 0x00ff00;
-	}
-}
+export const WalkableSystem = Effect.gen(function* () {
+	const entityManager = yield* EntityManager;
+	const tilemap = yield* Tilemap;
+	const positionConversion = yield* PositionConversion;
+
+	const update = (_ticker: PIXI.Ticker) =>
+		Effect.gen(function* () {
+			const walkableEntities =
+				yield* entityManager.getAllEntitiesWithComponents([
+					"Walkable",
+					"Position",
+				]);
+
+			for (const entity of walkableEntities) {
+				const walkable = entity.getComponent("Walkable");
+				const position = positionConversion.worldToGrid(
+					entity.getComponent("Position"),
+				);
+
+				tilemap.setWalkableAt(position.x, position.y, walkable.isWalkable);
+			}
+		});
+
+	return { update } as const satisfies System;
+});

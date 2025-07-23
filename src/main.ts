@@ -1,26 +1,26 @@
-import { Application } from "pixi.js";
-import { GameEngine } from "./game-engine.ts";
+import { BrowserRuntime } from "@effect/platform-browser";
+import { Effect, Layer, Logger, LogLevel } from "effect";
+import { GameEngine } from "./app/engine.ts";
+import { EntityManagerLive } from "./app/entity-manager.ts";
+import { RendererLive } from "./app/renderer.ts";
+import { StageLive } from "./app/stage.ts";
+import { TickerLive } from "./app/ticker.ts";
+import { TilemapLive } from "./app/tilemap.ts";
+import { ViewportLive } from "./app/viewport.ts";
+import { PathfinderFactoryLive } from "./services/pathfinder-factory.ts";
+import { PathfindingLive } from "./services/pathfinding-service.ts";
+import { PositionConversionLive } from "./services/position-conversion.ts";
 
-async function main() {
-	const app = new Application();
-
-	await app.init({
-		antialias: true,
-		autoStart: true,
-		canvas: document.getElementById("game") as HTMLCanvasElement,
-		resolution: window.devicePixelRatio,
-		height: window.innerHeight,
-		width: window.innerWidth,
-		resizeTo: window,
-	});
-
-	// @ts-ignore
-	globalThis.__PIXI_APP__ = app;
-	const gameEngine = new GameEngine(app);
-
-	gameEngine.createPawn(12, 12);
-
-	console.log(gameEngine);
-}
-
-void main();
+BrowserRuntime.runMain(
+	GameEngine.pipe(
+		Effect.provide(PathfindingLive),
+		Effect.provide(TilemapLive),
+		Effect.provide(PathfinderFactoryLive),
+		Effect.provide(PositionConversionLive),
+		Effect.provide(EntityManagerLive),
+		Effect.provide(ViewportLive),
+		Effect.provide(TickerLive),
+		Effect.provide(Layer.mergeAll(RendererLive, StageLive)),
+		Logger.withMinimumLogLevel(LogLevel.Debug),
+	),
+);

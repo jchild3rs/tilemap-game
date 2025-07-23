@@ -6,7 +6,7 @@
 	"scripts": {
 		"build": "vite build",
 		"check": "tsc && biome check . --write",
-		"dev": "vite",
+		"dev": "vite dev",
 		"format": "biome format . --write",
 		"lint": "biome lint . --write",
 		"preview": "vite preview",
@@ -16,14 +16,24 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.1.1",
 		"@types/heap": "^0.2.34",
+		"@types/pathfinding": "^0.1.0",
 		"typescript": "^5.9.0-beta",
 		"vite": "^7.0.3",
 		"vitest": "^3.2.4"
 	},
 	"dependencies": {
+		"@effect/opentelemetry": "^0.54.1",
+		"@effect/platform": "^0.88.2",
+		"@effect/platform-browser": "^0.68.1",
+		"@opentelemetry/sdk-logs": "^0.203.0",
+		"@opentelemetry/sdk-metrics": "^2.0.1",
+		"@opentelemetry/sdk-trace-base": "^2.0.1",
+		"@opentelemetry/sdk-trace-node": "^2.0.1",
+		"@opentelemetry/sdk-trace-web": "^2.0.1",
 		"@preact/signals-core": "^1.11.0",
 		"effect": "^3.16.16",
 		"heap": "^0.2.7",
+		"pathfinding": "^0.4.18",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.11.0"
 	}

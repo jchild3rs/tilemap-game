@@ -1,11 +1,5 @@
-export interface PositionLiteral {
-	x: number;
-	y: number;
-}
-
-export type PositionTuple = [number, number];
-
-export type Path = PositionTuple[];
+import type { Effect } from "effect";
+import type * as PIXI from "pixi.js";
 
 export enum MovementDirection {
 	Up = "up",
@@ -18,10 +12,11 @@ export enum MovementDirection {
 	DownRight = "down-right",
 }
 
-export interface Component {
-	readonly type: string;
+export interface PositionLiteral {
+	x: number;
+	y: number;
 }
 
 export interface System {
-	update(deltaTime: number): void;
+	readonly update: (ticker: PIXI.Ticker) => Effect.Effect<void>;
 }

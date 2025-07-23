@@ -15,10 +15,6 @@
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
 		"noUncheckedSideEffectImports": true,
-		"baseUrl": ".",
-		"paths": {
-			"pathfinding": ["./vendor/pathfinding/src"]
-		}
 	},
 	"include": ["src"]
 }
