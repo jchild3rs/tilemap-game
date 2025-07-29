@@ -13,11 +13,9 @@ import { Config } from "./config.ts";
 export class Tilemap extends Context.Tag("Tilemap")<
 	Tilemap,
 	{
-		getGrid(): Grid;
+		grid: Grid;
 		isWalkableAt(x: number, y: number): boolean;
 		setWalkableAt(x: number, y: number, isWalkable: boolean): void;
-		setWeightAt(x: number, y: number, weight: number): void;
-		getWeightAt(x: number, y: number): number;
 		findPath(start: PositionLiteral, end: PositionLiteral): number[][];
 		getRandomWalkablePosition(): PositionLiteral;
 	}
@@ -70,20 +68,8 @@ export const TilemapLive = Layer.effect(
 			}
 		};
 
-		const setWeightAt = (_x: number, _y: number, _value: number) => {
-			// grid.setWeightAt(x, y, value);
-		};
-
-		// const getWeightAt = (x: number, y: number) => 1;
-		const getWeightAt = (_x: number, _y: number) => {
-			return 0;
-			// grid.getWeightAt(x, y);
-		};
-
 		return {
-			getGrid: () => grid,
-			setWeightAt,
-			getWeightAt,
+			grid,
 			getRandomWalkablePosition,
 			findPath,
 			isWalkableAt,

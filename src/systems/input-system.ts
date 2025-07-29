@@ -139,7 +139,6 @@ export const InputSystem = Effect.gen(function* () {
 		isShiftHeld: boolean,
 	) =>
 		Effect.gen(function* () {
-			// console.log(tilemap.getGrid());
 			const gridTargetPosition = {
 				x: Math.floor(worldPosition.x / config.CELL_SIZE),
 				y: Math.floor(worldPosition.y / config.CELL_SIZE),

@@ -2,15 +2,11 @@ import { Effect } from "effect";
 import type * as PIXI from "pixi.js";
 import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
-import { Tilemap } from "../app/tilemap.ts";
-import { PositionConversion } from "../services/position-conversion.ts";
 import type { System } from "../types.ts";
 
 export const MovementSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
-	const tilemap = yield* Tilemap;
 	const config = yield* Config;
-	const positionConversion = yield* PositionConversion;
 
 	const update = (ticker: PIXI.Ticker) =>
 		Effect.gen(function* () {
@@ -41,10 +37,9 @@ export const MovementSystem = Effect.gen(function* () {
 				movement.isMoving = true;
 
 				const position = entity.getComponent("Position");
-				const gridPosition = positionConversion.worldToGrid(position);
-				const weight = tilemap.getWeightAt(gridPosition.x, gridPosition.y);
-
-				// console.log({weight})
+				// const gridPosition = positionConversion.worldToGrid(position);
+				// const weight = tilemap.getWeightAt(gridPosition.x, gridPosition.y);
+				const weight = 0; // todo
 
 				const currentPath = movement.path[0];
 

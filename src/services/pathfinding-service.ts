@@ -156,7 +156,7 @@ export const PathfindingLive = Layer.effect(
 			// If we still need more positions, find them using pathfinding
 			while (positions.length < targetCount) {
 				// Start with the center and expand outward
-				const searchGrid = tilemap.getGrid();
+				const searchGrid = tilemap.grid;
 
 				// Mark existing positions as unwalkable to find new ones
 				positions.forEach((pos) => {
