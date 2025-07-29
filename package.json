@@ -15,6 +15,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.1.1",
+		"@effect/language-service": "^0.31.2",
 		"@types/heap": "^0.2.34",
 		"@types/pathfinding": "^0.1.0",
 		"typescript": "^5.9.0-beta",
@@ -33,7 +34,6 @@
 		"@pixi/math-extras": "^7.4.3",
 		"@preact/signals-core": "^1.11.0",
 		"effect": "^3.16.16",
-		"heap": "^0.2.7",
 		"pathfinding": "^0.4.18",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.11.0"
