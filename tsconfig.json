@@ -14,11 +14,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
-		"noUncheckedSideEffectImports": true,
-		"baseUrl": ".",
-		"paths": {
-			"pathfinding": ["./vendor/pathfinding/src"]
-		}
+		"noUncheckedSideEffectImports": true
 	},
 	"include": ["src"]
 }
