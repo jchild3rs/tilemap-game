@@ -6,6 +6,7 @@ import * as PIXI from "pixi.js";
 import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
 import { Viewport } from "../app/viewport.ts";
+import type { System } from "../types.ts";
 
 export const PathRenderSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
@@ -51,17 +52,17 @@ export const PathRenderSystem = Effect.gen(function* () {
 					const paths = movement.path.flat();
 					const targetGridPosition = paths[paths.length - 1];
 
-					targetGraphic.width = config.CELL_SIZE;
-					targetGraphic.height = config.CELL_SIZE;
-					targetGraphic.position.set(
-						targetGridPosition[0] * config.CELL_SIZE + config.CELL_SIZE / 2,
-						targetGridPosition[1] * config.CELL_SIZE + config.CELL_SIZE / 2,
-					);
-					targetGraphic.circle(0, 0, 5).stroke({
-						color: 0xffffff,
-						width: 1,
-						alpha: 0.5,
-					});
+					// targetGraphic.width = config.CELL_SIZE;
+					// targetGraphic.height = config.CELL_SIZE;
+					// targetGraphic.position.set(
+					// 	targetGridPosition[0] * config.CELL_SIZE + config.CELL_SIZE / 2,
+					// 	targetGridPosition[1] * config.CELL_SIZE + config.CELL_SIZE / 2,
+					// );
+					// targetGraphic.circle(0, 0, 5).stroke({
+					// 	color: 0xffffff,
+					// 	width: 1,
+					// 	alpha: 0.5,
+					// });
 
 					pathGraphic.clear();
 
@@ -105,5 +106,5 @@ export const PathRenderSystem = Effect.gen(function* () {
 			}
 		});
 
-	return { update } as const;
+	return { update } as const satisfies System;
 });

@@ -2,12 +2,26 @@
  * Components are data structs used to compose entities to then be queried by systems.
  */
 import { Data } from "effect";
-import type { Grid } from "pathfinding";
 import type * as PIXI from "pixi.js";
+import type { Grid } from "./pathfinding/grid.ts";
 
-import type { MovementDirection } from "./types.ts";
+import type { MovementDirection, PositionLiteral } from "./types.ts";
+
+export type CombatStatus = "friendly" | "hostile";
 
 interface Components {
+	CombatStatus: {
+		readonly _tag: "CombatStatus";
+		status: CombatStatus;
+	};
+	Weapon: {
+		readonly _tag: "Weapon";
+		range: number; // radius
+		damagePerHit: number;
+		hitPercentage: number;
+		isFiring: boolean;
+		target: PositionLiteral | null;
+	};
 	Tile: {
 		readonly _tag: "Tile";
 		groundType: string;
@@ -27,6 +41,7 @@ interface Components {
 	Draftable: {
 		readonly _tag: "Draftable";
 		isDrafted: boolean;
+		fireAtWill: boolean;
 	};
 	Position: {
 		readonly _tag: "Position";
@@ -43,10 +58,19 @@ interface Components {
 		currentHealth: number;
 		maxHealth: number;
 	};
-	Graphics: {
-		readonly _tag: "Graphics";
-		readonly graphic: PIXI.Graphics;
-	};
+	Graphics:
+		| {
+				readonly _tag: "Graphics";
+				readonly graphic: PIXI.Graphics;
+		  }
+		| {
+				readonly _tag: "Graphics";
+				readonly graphic: PIXI.Sprite;
+		  }
+		| {
+				readonly _tag: "Graphics";
+				readonly graphic: PIXI.Container;
+		  };
 	Movement: {
 		readonly _tag: "Movement";
 		speed: number;
@@ -64,7 +88,6 @@ interface Components {
 	Selectable: {
 		readonly _tag: "Selectable";
 		isSelected: boolean;
-		isDrafted: boolean;
 	};
 	Input: {
 		readonly _tag: "Input";
@@ -78,10 +101,14 @@ interface Components {
 	Walkable: {
 		readonly _tag: "Walkable";
 		isWalkable: boolean;
+		weight: number;
 	};
 }
 
 export namespace Components {
+	export const Weapon = Data.tagged<Components["Weapon"]>("Weapon");
+	export const CombatStatus =
+		Data.tagged<Components["CombatStatus"]>("CombatStatus");
 	export const Position = Data.tagged<Components["Position"]>("Position");
 	export const Selectable = Data.tagged<Components["Selectable"]>("Selectable");
 	export const Highlightable =

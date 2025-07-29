@@ -1,5 +1,6 @@
 import type { Effect } from "effect";
 import type * as PIXI from "pixi.js";
+import type { Ticker } from "pixi.js";
 
 export enum MovementDirection {
 	Up = "up",
@@ -19,4 +20,9 @@ export interface PositionLiteral {
 
 export interface System {
 	readonly update: (ticker: PIXI.Ticker) => Effect.Effect<void>;
+	readonly mount?: () => Effect.Effect<void>;
+}
+
+export interface Command {
+	execute(ticker: Ticker): Effect.Effect<void>;
 }

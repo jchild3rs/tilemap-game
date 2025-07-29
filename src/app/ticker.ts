@@ -16,6 +16,8 @@ const makeTicker = Effect.gen(function* () {
 
 	ticker.start();
 
+	yield* Effect.log("created ticker", ticker);
+
 	return ticker;
 });
 

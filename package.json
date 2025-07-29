@@ -30,6 +30,7 @@
 		"@opentelemetry/sdk-trace-base": "^2.0.1",
 		"@opentelemetry/sdk-trace-node": "^2.0.1",
 		"@opentelemetry/sdk-trace-web": "^2.0.1",
+		"@pixi/math-extras": "^7.4.3",
 		"@preact/signals-core": "^1.11.0",
 		"effect": "^3.16.16",
 		"heap": "^0.2.7",

@@ -5,16 +5,15 @@ import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
 import { Tilemap } from "../app/tilemap.ts";
 import { Viewport } from "../app/viewport.ts";
-import {
-	ChangeGameSpeedLevel,
-	type Command,
-	Draft,
-	MoveViewport,
-	TogglePausePlay,
-} from "../commands.ts";
+import { ChangeGameSpeedLevel } from "../commands/change-game-speed-level.ts";
+import { Draft } from "../commands/draft.ts";
+import { MoveViewport } from "../commands/move-viewport.ts";
+import { SelectAll } from "../commands/select-all.ts";
+import { TogglePausePlay } from "../commands/toggle-pause-play.ts";
 import { Pathfinding } from "../services/pathfinding-service.ts";
 import { PositionConversion } from "../services/position-conversion.ts";
 import {
+	type Command,
 	MovementDirection,
 	type PositionLiteral,
 	type System,
@@ -34,8 +33,18 @@ export const InputSystem = Effect.gen(function* () {
 	const mouseHoverPosition: PositionLiteral = { x: 0, y: 0 };
 	const pathfinding = yield* Pathfinding;
 
-	const handleKeyCombinations = (): void => {
+	const handleKeyCombinations = (): boolean => {
+		if (keys["meta"] && keys["a"]) {
+			// selectAllEntities();
+		}
 		// Examples of handling key combinations
+		if (keys["meta"] && keys["+"]) {
+			return true;
+		}
+
+		if (keys["meta"] && keys["-"]) {
+			return true;
+		}
 		// if (keys["control"] && keys["a"]) {
 		// 	// Ctrl+A: Select all entities
 		// 	selectAllEntities();
@@ -51,6 +60,7 @@ export const InputSystem = Effect.gen(function* () {
 		// 	// Prevent browser's save dialog
 		// 	keys["s"] = false;
 		// }
+		return false;
 	};
 
 	// Setup keydown event
@@ -90,7 +100,10 @@ export const InputSystem = Effect.gen(function* () {
 		if (event.altKey) keys["alt"] = true;
 
 		// Handle key combinations
-		handleKeyCombinations();
+		const preventDefault = handleKeyCombinations();
+		if (preventDefault) {
+			event.preventDefault();
+		}
 	});
 
 	// Setup keyup event
@@ -126,6 +139,7 @@ export const InputSystem = Effect.gen(function* () {
 		isShiftHeld: boolean,
 	) =>
 		Effect.gen(function* () {
+			// console.log(tilemap.getGrid());
 			const gridTargetPosition = {
 				x: Math.floor(worldPosition.x / config.CELL_SIZE),
 				y: Math.floor(worldPosition.y / config.CELL_SIZE),
@@ -139,6 +153,9 @@ export const InputSystem = Effect.gen(function* () {
 				return;
 			}
 
+			const allPositionEntities =
+				yield* entityManager.getAllEntitiesWithComponents(["Position"]);
+
 			const entities = yield* entityManager.getAllEntitiesWithComponents([
 				"Movement",
 				"Position",
@@ -146,22 +163,27 @@ export const InputSystem = Effect.gen(function* () {
 				"Selectable",
 			]);
 
-			const targetIsInCurrentPositions = entities.some((e) => {
-				const entity = e.getComponent("Position");
+			const positionEntities = allPositionEntities.map((e) => {
+				return e.getComponent("Position");
+			});
+			// console.log({ positionEntities });
+			const targetIsInCurrentPositions = positionEntities.some((entity) => {
 				const gridPos = positionConversion.worldToGrid(entity);
-				console.log(
-					gridPos.x,
-					gridPos.y,
-					gridTargetPosition.x,
-					gridTargetPosition.y,
-				);
+				// console.log(
+				// 	gridPos.x,
+				// 	gridPos.y,
+				// 	gridTargetPosition.x,
+				// 	gridTargetPosition.y,
+				// );
 				return (
 					gridPos.x === gridTargetPosition.x &&
 					gridPos.y === gridTargetPosition.y
 				);
 			});
+			console.log({ targetIsInCurrentPositions });
 
 			if (targetIsInCurrentPositions) {
+				alert("TODO: context menu on the thing you clicked");
 				return;
 			}
 
@@ -401,6 +423,7 @@ export const InputSystem = Effect.gen(function* () {
 	commands["3"] = ChangeGameSpeedLevel(2);
 	commands[" "] = TogglePausePlay();
 	commands["r"] = Draft(entityManager);
+	commands["j"] = SelectAll(entityManager);
 
 	const getDirectionFromVector = (
 		dx: number,

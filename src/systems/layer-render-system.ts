@@ -62,23 +62,26 @@ export const LayerRenderSystem = Effect.gen(function* () {
 	});
 
 	const renderGameObjects = Effect.gen(function* () {
-		const worldPositionedEntities =
-			yield* entityManager.getAllEntitiesWithComponents([
-				"Objects",
-				"Position",
-				"Graphics",
-			]);
+		const all = yield* entityManager.getAllEntities;
+		// console.log(all);
+		const objects = yield* entityManager.getAllEntitiesWithComponents([
+			"Objects",
+			"Position",
+			"Graphics",
+		]);
 
-		for (const entity of worldPositionedEntities) {
+		// console.log(objects.length)
+		for (const entity of objects) {
 			const position = entity.getComponent("Position");
 			const graphics = entity.getComponent("Graphics");
 
 			// Update graphic position based on position component
-			graphics.graphic.x = position.x;
-			graphics.graphic.y = position.y;
+			graphics.graphic.position.set(position.x, position.y);
 
 			// Ensure the graphic is in the correct layer
 			if (graphics.graphic.parent !== objectLayer) {
+				// console.log(graphics.graphic)
+
 				objectLayer.addChild(graphics.graphic);
 			}
 		}

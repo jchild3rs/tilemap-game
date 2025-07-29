@@ -10,29 +10,41 @@ import type { System } from "../types.ts";
 export const TilemapRenderSystem = Effect.gen(function* () {
 	const viewport = yield* Viewport;
 	const config = yield* Config;
-	const container = viewport.addChild(new PIXI.Container({ label: "Tilemap" }));
 
-	for (let row = 0; row < config.WORLD_SIZE; row++) {
-		for (let col = 0; col < config.WORLD_SIZE; col++) {
-			const tileGraphic = container.addChild(
-				new PIXI.Graphics({ label: `Tile ${row},${col}`, eventMode: "none" })
-					.rect(0, 0, config.CELL_SIZE, config.CELL_SIZE)
-					.stroke({
-						width: 1,
-						color: 0xffffff,
-						alpha: 0.5,
-						pixelLine: true,
-						alignment: 1,
-					}),
+	const mount = () =>
+		Effect.sync(() => {
+			const container = viewport.addChild(
+				new PIXI.Container({ label: "Tilemap" }),
 			);
 
-			tileGraphic.position.set(col * config.CELL_SIZE, row * config.CELL_SIZE);
-		}
-	}
+			for (let row = 0; row < config.WORLD_SIZE; row++) {
+				for (let col = 0; col < config.WORLD_SIZE; col++) {
+					const tileGraphic = container.addChild(
+						new PIXI.Graphics({
+							label: `Tile ${row},${col}`,
+							eventMode: "none",
+						})
+							.rect(0, 0, config.CELL_SIZE, config.CELL_SIZE)
+							.stroke({
+								width: 1,
+								color: 0xffffff,
+								alpha: 0.1,
+								pixelLine: true,
+								alignment: 1,
+							}),
+					);
+
+					tileGraphic.position.set(
+						col * config.CELL_SIZE,
+						row * config.CELL_SIZE,
+					);
+				}
+			}
+		});
 
 	const update = (_ticker: PIXI.Ticker) => Effect.succeed(undefined);
 
-	return { update } as const satisfies System;
+	return { update, mount } as const satisfies System;
 });
 
 export const WalkableSystem = Effect.gen(function* () {
@@ -40,7 +52,7 @@ export const WalkableSystem = Effect.gen(function* () {
 	const tilemap = yield* Tilemap;
 	const positionConversion = yield* PositionConversion;
 
-	const update = (_ticker: PIXI.Ticker) =>
+	const mount = () =>
 		Effect.gen(function* () {
 			const walkableEntities =
 				yield* entityManager.getAllEntitiesWithComponents([
@@ -55,8 +67,12 @@ export const WalkableSystem = Effect.gen(function* () {
 				);
 
 				tilemap.setWalkableAt(position.x, position.y, walkable.isWalkable);
+				tilemap.setWeightAt(position.x, position.y, walkable.weight);
 			}
 		});
 
-	return { update } as const satisfies System;
+	return {
+		update: (_) => Effect.succeed(undefined),
+		mount,
+	} as const satisfies System;
 });

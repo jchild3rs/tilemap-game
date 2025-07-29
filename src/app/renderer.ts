@@ -28,6 +28,8 @@ const makeRenderer = Effect.gen(function* () {
 		renderer.resize(window.innerWidth, window.innerHeight);
 	});
 
+	yield* Effect.log("created renderer", renderer);
+
 	return renderer;
 });
 

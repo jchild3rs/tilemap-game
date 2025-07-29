@@ -54,6 +54,8 @@ const makeEntityManager = Effect.gen(function* () {
 			),
 		);
 
+	yield* Effect.log("created entity manager");
+
 	return {
 		createEntity,
 		removeEntity,

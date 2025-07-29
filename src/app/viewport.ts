@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import { Viewport as PIXIViewport } from "pixi-viewport";
+import { type IViewportOptions, Viewport as PIXIViewport } from "pixi-viewport";
 import { Config } from "./config.ts";
 import { Renderer } from "./renderer.ts";
 import { Stage } from "./stage.ts";
@@ -11,16 +11,18 @@ export const makeViewport = Effect.gen(function* () {
 	const stage = yield* Stage;
 	const config = yield* Config;
 
-	const viewport = stage.addChild(
-		new PIXIViewport({
-			screenWidth: window.innerWidth,
-			screenHeight: window.innerHeight,
-			worldWidth: config.worldSize.width,
-			worldHeight: config.worldSize.height,
-			events: renderer.events,
-			ticker: ticker,
-		}),
-	);
+	const options: IViewportOptions = {
+		screenWidth: window.innerWidth,
+		screenHeight: window.innerHeight,
+		worldWidth: config.worldSize.width,
+		worldHeight: config.worldSize.height,
+		passiveWheel: false,
+		allowPreserveDragOutside: true,
+		events: renderer.events,
+		ticker: ticker,
+	};
+	yield* Effect.logDebug("creating viewport with options", options);
+	const viewport = stage.addChild(new PIXIViewport(options));
 
 	// viewport.addChild(
 	// 	new PIXI.Graphics()
@@ -33,13 +35,15 @@ export const makeViewport = Effect.gen(function* () {
 		.pinch()
 		.wheel()
 		.zoom(0, true)
-		.clampZoom({
-			minScale: config.zoom.min,
-			maxScale: config.zoom.max,
-		})
+		// .clampZoom({
+		// 	minScale: config.zoom.min,
+		// 	maxScale: config.zoom.max,
+		// })
 		.decelerate()
 		.fitWorld()
 		.moveCenter(config.worldSize.width / 2, config.worldSize.height / 2);
+
+	yield* Effect.log("created viewport", viewport);
 
 	return viewport;
 });

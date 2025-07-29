@@ -94,6 +94,13 @@ export const PathfindingLive = Layer.effect(
 			return blockedNeighbors <= 6;
 		};
 
+		// const generateLakePositions = (
+		// 	center: PositionLiteral,
+		// ) => {
+		// 	const positions: PositionLiteral[] = [];
+		//
+		// }
+
 		const generateSpiralPositions = (
 			center: PositionLiteral,
 			distance: number,
@@ -278,21 +285,21 @@ export const PathfindingLive = Layer.effect(
 			// Create cost matrix for Hungarian algorithm
 			const costMatrix: number[][] = [];
 
-			selectedPositions.forEach((position) => {
+			for (const position of selectedPositions) {
 				const pawnPos = positionConversion.worldToGrid(position);
 				const costs: number[] = [];
 
-				formationPositions.forEach((formationPos) => {
+				for (const formationPos of formationPositions) {
 					// Calculate path length instead of just distance
 					const path = tilemap.findPath(pawnPos, formationPos);
 					const pathLength = path.length;
 
 					// If no path is found, use a very high cost
 					costs.push(pathLength > 0 ? pathLength : 1000);
-				});
+				}
 
 				costMatrix.push(costs);
-			});
+			}
 
 			// Implement a greedy assignment based on path costs
 			const assignedPositions = new Set<number>();

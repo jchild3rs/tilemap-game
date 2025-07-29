@@ -1,6 +1,7 @@
 import { Chunk, Effect, Stream, type StreamEmit } from "effect";
 import type { FederatedPointerEvent } from "pixi.js";
 import * as PIXI from "pixi.js";
+import { Config } from '../app/config.ts';
 import { EntityManager } from "../app/entity-manager.ts";
 import { Viewport } from "../app/viewport.ts";
 import type { PositionLiteral, System } from "../types.ts";
@@ -8,6 +9,7 @@ import type { PositionLiteral, System } from "../types.ts";
 export const SelectionSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
 	const viewport = yield* Viewport;
+	const config = yield* Config;
 
 	const selectionGraphic = viewport.addChild(
 		new PIXI.Graphics({
@@ -28,9 +30,17 @@ export const SelectionSystem = Effect.gen(function* () {
 	let selectionEnd: PositionLiteral | null = null;
 
 	const handleMouseDown = (event: FederatedPointerEvent) =>
-		Effect.sync(() => {
+		Effect.gen(function* () {
 			selectionStart = viewport.toWorld(event.screen);
 			selectionBounds = null;
+
+			// const entities = yield* entityManager.getAllEntitiesWithComponents(["Selectable",]);
+			//
+			// for (const entity of entities) {
+			// 	const selectable = entity.getComponent("Selectable");
+			//
+			// 	selectable.isSelected = false;
+			// }
 		});
 
 	yield* Stream.async(
@@ -52,36 +62,13 @@ export const SelectionSystem = Effect.gen(function* () {
 			if (!selectionStart) {
 				return;
 			}
+
 			selectionBounds = {
 				x: Math.min(selectionStart.x, selectionEnd.x),
 				y: Math.min(selectionStart.y, selectionEnd.y),
 				width: Math.abs(selectionStart.x - selectionEnd.x),
 				height: Math.abs(selectionStart.y - selectionEnd.y),
 			};
-
-			const screenPosition = viewport.toGlobal(selectionBounds);
-
-			const selectionRect = new PIXI.Rectangle(
-				screenPosition.x,
-				screenPosition.y,
-				selectionBounds.width,
-				selectionBounds.height,
-			);
-
-			const entities = yield* entityManager.getAllEntitiesWithComponents([
-				"Highlightable",
-				"Selectable",
-				"Graphics",
-			]);
-
-			for (const selectableGraphic of entities) {
-				const graphics = selectableGraphic.getComponent("Graphics");
-				const selectable = selectableGraphic.getComponent("Selectable");
-
-				selectable.isSelected = selectionRect.intersects(
-					graphics.graphic.getBounds().rectangle,
-				);
-			}
 		});
 
 	yield* Stream.async(
@@ -96,7 +83,7 @@ export const SelectionSystem = Effect.gen(function* () {
 		Effect.forkDaemon,
 	);
 
-	const handleMouseUp = (event: FederatedPointerEvent) =>
+	const handleMouseUp = (_event: FederatedPointerEvent) =>
 		Effect.gen(function* () {
 			selectionStart = null;
 			selectionEnd = null;
@@ -106,20 +93,6 @@ export const SelectionSystem = Effect.gen(function* () {
 			if (selectionBounds) {
 				selectionBounds = null;
 				return;
-			}
-
-			const entities = yield* entityManager.getAllEntitiesWithComponents([
-				"Selectable",
-				"Graphics",
-			]);
-
-			for (const selectableGraphic of entities) {
-				const graphics = selectableGraphic.getComponent("Graphics");
-				const selectable = selectableGraphic.getComponent("Selectable");
-
-				selectable.isSelected = graphics.graphic
-					.getBounds()
-					.rectangle.contains(event.screenX, event.screenY);
 			}
 		});
 
@@ -143,13 +116,6 @@ export const SelectionSystem = Effect.gen(function* () {
 				"Graphics",
 			]);
 
-			for (const selectableGraphic of entities) {
-				const graphics = selectableGraphic.getComponent("Graphics");
-				const selectable = selectableGraphic.getComponent("Selectable");
-
-				graphics.graphic.alpha = selectable.isSelected ? 0.5 : 1;
-			}
-
 			if (!selectionBounds) {
 				return;
 			}
@@ -161,7 +127,31 @@ export const SelectionSystem = Effect.gen(function* () {
 			selectionGraphic.position.set(selectionBounds.x, selectionBounds.y);
 			selectionGraphic.width = selectionBounds.width;
 			selectionGraphic.height = selectionBounds.height;
+
+
+
+			for (const selectableGraphic of entities) {
+				const graphics = selectableGraphic.getComponent("Graphics");
+				const selectable = selectableGraphic.getComponent("Selectable");
+
+				selectable.isSelected = selectionGraphic
+					.getBounds()
+					.rectangle.intersects(graphics.graphic.getBounds().rectangle);
+
+				const existingHighlight = graphics.graphic.getChildByLabel("highlight");
+				const highlightGraphic= existingHighlight || new PIXI.Graphics({label: "highlight"})
+					.rect(0, 0, config.CELL_SIZE, config.CELL_SIZE)
+					.stroke(0xffffff)
+				if (!existingHighlight) {
+					graphics.graphic.addChild(highlightGraphic);
+				}
+				highlightGraphic.visible = selectable.isSelected;
+
+				// graphics.graphic.alpha = selectable.isSelected ? 0.5 : 1;
+			}
 		});
 
-	return { update } as const satisfies System;
+	const system: System = { update };
+
+	return system;
 });

@@ -3,11 +3,18 @@ import * as PIXI from "pixi.js";
 
 export class Stage extends Context.Tag("Stage")<Stage, PIXI.Container>() {}
 
-const makeStage = Effect.sync(() => {
-	const stage = new PIXI.Container();
+const makeStage = Effect.gen(function* () {
+	const stage = new PIXI.Container({
+		width: window.innerWidth,
+		height: window.innerHeight,
+		label: "Stage",
+		position: { x: 0, y: 0 },
+	});
 
 	// @ts-ignore
 	globalThis.__PIXI_STAGE__ = stage;
+
+	yield* Effect.log("created stage", stage);
 
 	return stage;
 });

@@ -2,10 +2,15 @@ import { Effect } from "effect";
 import type * as PIXI from "pixi.js";
 import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
+import { Tilemap } from "../app/tilemap.ts";
+import { PositionConversion } from "../services/position-conversion.ts";
+import type { System } from "../types.ts";
 
 export const MovementSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
+	const tilemap = yield* Tilemap;
 	const config = yield* Config;
+	const positionConversion = yield* PositionConversion;
 
 	const update = (ticker: PIXI.Ticker) =>
 		Effect.gen(function* () {
@@ -36,7 +41,16 @@ export const MovementSystem = Effect.gen(function* () {
 				movement.isMoving = true;
 
 				const position = entity.getComponent("Position");
+				const gridPosition = positionConversion.worldToGrid(position);
+				const weight = tilemap.getWeightAt(gridPosition.x, gridPosition.y);
+
+				// console.log({weight})
+
 				const currentPath = movement.path[0];
+
+				// if (tilemap.isWalkableAt(currentPath[0][0], currentPath[0][1])) {
+				// 	tilemap.setWalkableAt(currentPath[0][0], currentPath[0][1], false);
+				// }
 
 				if (movement.currentPathIndex < currentPath.length) {
 					const [nextGridX, nextGridY] = currentPath[movement.currentPathIndex];
@@ -63,7 +77,7 @@ export const MovementSystem = Effect.gen(function* () {
 
 					// Normal movement code - only move if we need to move
 					if (distance > 0.1) {
-						const speed = movement.speed * ticker.speed * 32;
+						const speed = movement.speed * ticker.speed * 32 - weight;
 						const moveDistance = Math.min(speed, distance);
 
 						const directionX = dx / distance;
@@ -93,10 +107,23 @@ export const MovementSystem = Effect.gen(function* () {
 						// console.log(currentPath, currentPath[0][0], currentPath[0][1]);
 						// tilemap.setWalkableAt(currentPath[0][0], currentPath[0][1], false);
 						console.log("reached the end of all paths");
+
+						// set the reached destination as NOT walkable by others
+						// tilemap.setWalkableAt(currentPath[0][0], currentPath[0][1], false);
+
+						// make sure that if the first path was a previous non walkable desitation
+						// that it is now walkable again
+						// if (movement.pendingPath && movement.pendingPath.length > 0) {
+						// 	const [nextGridX, nextGridY] = movement.pendingPath[0][0];
+						// 	tilemap.setWalkableAt(nextGridX, nextGridY, true);
+						// }
+						//
+						// // set the reached destination as walkable by others
+						// tilemap.setWalkableAt(currentPath[currentPath.length - 1][0], currentPath[currentPath.length - 1][1], false);
 					}
 				}
 			}
 		});
 
-	return { update } as const;
+	return { update } as const satisfies System;
 });
