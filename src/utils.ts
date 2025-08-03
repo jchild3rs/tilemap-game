@@ -35,17 +35,23 @@ export function getGridLinePoints(
 export const findClosestPosition = (
 	current: PositionLiteral,
 	targets: PositionLiteral[],
-) => {
+	range: number, // in pixels
+):
+	| (PositionLiteral & {
+			distance: number;
+	  })
+	| null => {
 	let closest:
 		| (PositionLiteral & {
 				distance: number;
 		  })
-		| undefined;
+		| null = null;
 
 	for (const target of targets) {
 		const distance = Math.sqrt(
 			(target.x - current.x) ** 2 + (target.y - current.y) ** 2,
 		);
+		// if (distance < range) continue
 
 		if (!closest || distance < closest.distance) {
 			closest = {
@@ -54,6 +60,10 @@ export const findClosestPosition = (
 				distance,
 			};
 		}
+	}
+
+	if (closest && closest.distance > range) {
+		return null;
 	}
 
 	return closest;

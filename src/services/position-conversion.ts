@@ -1,5 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 import { Config } from "../app/config.ts";
+import { Tilemap } from "../app/tilemap.ts";
 import type { PositionLiteral } from "../types.ts";
 import { clamp } from "../utils.ts";
 
@@ -14,16 +15,17 @@ export class PositionConversion extends Context.Tag("PositionConversion")<
 export const makePositionConversionService = () =>
 	Effect.gen(function* () {
 		const config = yield* Config;
+		const tilemap = yield* Tilemap;
 
 		const worldToGrid = (position: PositionLiteral) => ({
 			x: clamp(
 				0,
-				config.worldSize.width,
+				tilemap.grid.width * config.CELL_SIZE,
 				Math.floor(position.x / config.CELL_SIZE),
 			),
 			y: clamp(
 				0,
-				config.worldSize.height - 1,
+				tilemap.grid.height * config.CELL_SIZE - 1,
 				Math.floor(position.y / config.CELL_SIZE),
 			),
 		});

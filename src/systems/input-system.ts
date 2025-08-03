@@ -179,7 +179,7 @@ export const InputSystem = Effect.gen(function* () {
 					gridPos.y === gridTargetPosition.y
 				);
 			});
-			console.log({ targetIsInCurrentPositions });
+			// console.log({ targetIsInCurrentPositions });
 
 			if (targetIsInCurrentPositions) {
 				alert("TODO: context menu on the thing you clicked");

@@ -10,7 +10,7 @@ export class Pathfinding extends Context.Tag("Pathfinding")<
 	{
 		isValidFormationPosition(
 			position: PositionLiteral,
-			existingPawnDestinations?: Set<string>,
+			existingPositions?: Set<string>,
 		): boolean;
 
 		generateSpiralPositions(
@@ -54,11 +54,11 @@ export const PathfindingLive = Layer.effect(
 
 		const isValidFormationPosition = (
 			position: PositionLiteral,
-			existingPawnDestinations: Set<string> = new Set(),
+			existingPositions: Set<string> = new Set(),
 		): boolean => {
-			// Check if position is already a target for another pawn
+			// Check if position is already a target for another position
 			const posKey = `${position.x},${position.y}`;
-			if (existingPawnDestinations.has(posKey)) {
+			if (existingPositions.has(posKey)) {
 				return false;
 			}
 
@@ -80,9 +80,9 @@ export const PathfindingLive = Layer.effect(
 					// Count unwalkable neighboring tiles
 					if (
 						nx < 0 ||
-						nx >= config.worldSize.width ||
+						nx >= tilemap.grid.width * config.CELL_SIZE ||
 						ny < 0 ||
-						ny >= config.worldSize.height ||
+						ny >= tilemap.grid.height * config.CELL_SIZE ||
 						!tilemap.isWalkableAt(nx, ny)
 					) {
 						blockedNeighbors++;
@@ -117,8 +117,8 @@ export const PathfindingLive = Layer.effect(
 				const y = Math.round(center.y + d * Math.sin(angle));
 
 				const pos = {
-					x: clamp(0, config.worldSize.width - 1, x),
-					y: clamp(0, config.worldSize.height - 1, y),
+					x: clamp(0, tilemap.grid.width * config.CELL_SIZE - 1, x),
+					y: clamp(0, tilemap.grid.height * config.CELL_SIZE - 1, y),
 				};
 
 				// Add if not already in the list
@@ -197,9 +197,9 @@ export const PathfindingLive = Layer.effect(
 
 							if (
 								nx >= 0 &&
-								nx < config.worldSize.width &&
+								nx < tilemap.grid.width * config.CELL_SIZE &&
 								ny >= 0 &&
-								ny < config.worldSize.height
+								ny < tilemap.grid.height * config.CELL_SIZE
 							) {
 								queue.push({ x: nx, y: ny });
 							}
@@ -223,7 +223,6 @@ export const PathfindingLive = Layer.effect(
 			const positions: PositionLiteral[] = [];
 
 			if (count === 1) {
-				// Single pawn goes directly to target
 				return [center];
 			}
 
@@ -235,8 +234,8 @@ export const PathfindingLive = Layer.effect(
 
 			// First try the center position
 			const centerPos = {
-				x: clamp(0, config.worldSize.width - 1, center.x),
-				y: clamp(0, config.worldSize.height - 1, center.y),
+				x: clamp(0, tilemap.grid.width * config.CELL_SIZE - 1, center.x),
+				y: clamp(0, tilemap.grid.height * config.CELL_SIZE - 1, center.y),
 			};
 
 			if (isValidFormationPosition(centerPos)) {
@@ -286,12 +285,12 @@ export const PathfindingLive = Layer.effect(
 			const costMatrix: number[][] = [];
 
 			for (const position of selectedPositions) {
-				const pawnPos = positionConversion.worldToGrid(position);
+				const entityPosition = positionConversion.worldToGrid(position);
 				const costs: number[] = [];
 
 				for (const formationPos of formationPositions) {
 					// Calculate path length instead of just distance
-					const path = tilemap.findPath(pawnPos, formationPos);
+					const path = tilemap.findPath(entityPosition, formationPos);
 					const pathLength = path.length;
 
 					// If no path is found, use a very high cost

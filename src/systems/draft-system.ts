@@ -21,15 +21,13 @@ export const DraftSystem = Effect.gen(function* () {
 				const graphics = entity.getComponent("Graphics");
 
 				const draftedIndicator = new PIXI.Graphics({ label: "draft" })
-					// .circle(config.CELL_SIZE / 2, config.CELL_SIZE / 2, 10)
 					.rect(
 						config.CELL_SIZE / 2 - config.CELL_SIZE / 4,
-						config.CELL_SIZE + 2,
+						config.CELL_SIZE + 6,
 						config.CELL_SIZE / 2,
 						1,
 					)
 					.stroke(0xffffff);
-				// .fill(0xffffff);
 
 				const existingDraftIndicator =
 					graphics.graphic.getChildByLabel("draft");

@@ -1,10 +1,11 @@
 import { Effect } from "effect";
 import * as PIXI from "pixi.js";
 import { Config } from "../app/config.ts";
+import type { Entity } from "../app/entity.ts";
 import { EntityManager } from "../app/entity-manager.ts";
 import { Tilemap } from "../app/tilemap.ts";
 import { PositionConversion } from "../services/position-conversion.ts";
-import type { System } from "../types.ts";
+import type { PositionLiteral, System } from "../types.ts";
 import { findClosestPosition, getGridLinePoints } from "../utils.ts";
 
 export const WeaponSystem = Effect.gen(function* () {
@@ -13,27 +14,7 @@ export const WeaponSystem = Effect.gen(function* () {
 	const tilemap = yield* Tilemap;
 	const positionConversion = yield* PositionConversion;
 
-	const stateSystem = Effect.gen(function* () {
-		const entities = yield* entityManager.getAllEntitiesWithComponents([
-			"CombatStatus",
-			"Weapon",
-			"Draftable",
-			"Position",
-		]);
-
-		const enemyPositions = yield* entityManager
-			.getAllEntitiesWithComponents(["CombatStatus", "Position"])
-			.pipe(
-				Effect.map((entities) =>
-					entities
-						.filter(
-							(entity) =>
-								entity.getComponent("CombatStatus").status === "hostile",
-						)
-						.map((entity) => entity.getComponent("Position")),
-				),
-			);
-
+	function updateWeaponState(entities: Entity[], targets: PositionLiteral[]) {
 		for (const entity of entities) {
 			const weapon = entity.getComponent("Weapon");
 			const drafted = entity.getComponent("Draftable");
@@ -41,7 +22,12 @@ export const WeaponSystem = Effect.gen(function* () {
 
 			if (!drafted.isDrafted) continue;
 
-			weapon.target = findClosestPosition(position, enemyPositions) || null;
+			weapon.target = findClosestPosition(
+				position,
+				targets,
+				weapon.range * config.CELL_SIZE,
+			);
+
 			if (weapon.target) {
 				const noObstacles = getGridLinePoints(
 					positionConversion.worldToGrid(position),
@@ -57,6 +43,39 @@ export const WeaponSystem = Effect.gen(function* () {
 				weapon.isFiring = noObstacles && isWithinRange;
 			}
 		}
+	}
+
+	const stateSystem = Effect.gen(function* () {
+		const entities = yield* entityManager.getAllEntitiesWithComponents([
+			"CombatStatus",
+			"Weapon",
+			"Draftable",
+			"Position",
+			"Health",
+		]);
+
+		const friendlies = entities.filter(
+			(entity) =>
+				entity.getComponent("CombatStatus").status === "friendly" &&
+				entity.getComponent("Health").currentHealth > 0,
+		);
+
+		const friendlyPositions = friendlies.map((entity) =>
+			entity.getComponent("Position"),
+		);
+
+		const enemies = entities.filter(
+			(entity) =>
+				entity.getComponent("CombatStatus").status === "hostile" &&
+				entity.getComponent("Health").currentHealth > 0,
+		);
+
+		const enemyPositions = enemies.map((entity) =>
+			entity.getComponent("Position"),
+		);
+
+		updateWeaponState(friendlies, enemyPositions);
+		updateWeaponState(enemies, friendlyPositions);
 	});
 
 	const uiSystem = Effect.gen(function* () {
@@ -99,15 +118,19 @@ export const WeaponSystem = Effect.gen(function* () {
 
 			const rangeRadiusGraphic =
 				existingRangeGraphic ||
-				new PIXI.Graphics({ label: "range", eventMode: "none" })
+				new PIXI.Graphics({
+					label: "range",
+					eventMode: "none",
+				})
 					.circle(
 						config.CELL_SIZE / 2,
 						config.CELL_SIZE / 2,
 						config.CELL_SIZE * (weapon.range - 0.8),
 					)
 					.stroke({
-						width: 4,
-						color: 0xff0000,
+						width: 1,
+						alpha: 0.2,
+						color: 0xffffff,
 					});
 
 			rangeRadiusGraphic.visible = weapon.isFiring;
@@ -122,22 +145,24 @@ export const WeaponSystem = Effect.gen(function* () {
 
 			const targetLineGraphic =
 				existingTargetLineGraphic ||
-				new PIXI.Graphics({ label: "target line", visible: false });
+				new PIXI.Graphics({
+					label: "target line",
+					visible: false,
+					alpha: 0.2,
+				});
 
 			if (!existingTargetLineGraphic) {
 				graphics.graphic.addChild(targetLineGraphic);
 			}
 
-			// rangeRadiusGraphic.alpha = 0.2;
-			targetLineGraphic.visible = weapon.isFiring; // is debug for now
-			// targetLineGraphic.visible = false
+			targetLineGraphic.visible = Boolean(weapon.target);
 
 			if (weapon.target) {
 				targetLineGraphic.clear();
 				targetLineGraphic
 					.moveTo(0, 0)
 					.lineTo(weapon.target.x - position.x, weapon.target.y - position.y)
-					.stroke(0xff0000);
+					.stroke(0xffffff);
 
 				targetLineGraphic.position.set(
 					config.CELL_SIZE / 2,

@@ -16,7 +16,7 @@ export class Config extends Context.Tag("Config")<
 			defaultDiagonalMovement: DiagonalMovement;
 			defaultWeight: number;
 		};
-		pawn: {
+		person: {
 			baseMovementSpeed: number;
 			maxHealth: number;
 			skinColors: string[];
@@ -83,7 +83,7 @@ export const ConfigLive = Layer.effect(
 			},
 		};
 
-		const pawn = {
+		const person = {
 			baseMovementSpeed: 0.1,
 			maxHealth: 100,
 			skinColors: [
@@ -111,7 +111,7 @@ export const ConfigLive = Layer.effect(
 			pathfinding,
 			ground,
 			rendering,
-			pawn,
+			person,
 			zoom,
 		} as const;
 	}),

@@ -10,6 +10,13 @@ import type { MovementDirection, PositionLiteral } from "./types.ts";
 export type CombatStatus = "friendly" | "hostile";
 
 interface Components {
+	Person: {
+		readonly _tag: "Person";
+		firstName: string;
+		lastName: string;
+		sex: string;
+		age: number;
+	};
 	CombatStatus: {
 		readonly _tag: "CombatStatus";
 		status: CombatStatus;
@@ -20,7 +27,14 @@ interface Components {
 		damagePerHit: number;
 		hitPercentage: number;
 		isFiring: boolean;
+		fireAtWill: boolean;
+		cooldown: number; // ms
+		cooldownTimer: number; // ms
 		target: PositionLiteral | null;
+		bullets: Array<{
+			position: PositionLiteral;
+			speed: number;
+		}>;
 	};
 	Tile: {
 		readonly _tag: "Tile";
@@ -106,6 +120,7 @@ interface Components {
 }
 
 export namespace Components {
+	export const Person = Data.tagged<Components["Person"]>("Person");
 	export const Weapon = Data.tagged<Components["Weapon"]>("Weapon");
 	export const CombatStatus =
 		Data.tagged<Components["CombatStatus"]>("CombatStatus");

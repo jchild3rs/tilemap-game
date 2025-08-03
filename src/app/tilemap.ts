@@ -1,11 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import {
-	type AStarFinder,
-	type BiAStarFinder,
-	type BiBreadthFirstFinder,
-	type BreadthFirstFinder,
-	Grid,
-} from "pathfinding";
+import { Grid } from "pathfinding";
 import { PathfinderFactory } from "../services/pathfinder-factory.ts";
 import type { PositionLiteral } from "../types.ts";
 import { Config } from "./config.ts";
@@ -29,27 +23,20 @@ export const TilemapLive = Layer.effect(
 		const pathfinderFactory = yield* PathfinderFactory;
 		const grid = new Grid(config.WORLD_SIZE, config.WORLD_SIZE);
 
-		const finders: Record<
-			typeof config.pathfinding.defaultAlgorithm,
-			AStarFinder | BiAStarFinder | BreadthFirstFinder | BiBreadthFirstFinder
-		> = {
-			aStar: yield* pathfinderFactory.createFinder("aStar"),
-			biAStar: yield* pathfinderFactory.createFinder("biAStar"),
-			breadthFirst: yield* pathfinderFactory.createFinder("breadthFirst"),
-			biBreadthFirst: yield* pathfinderFactory.createFinder("biBreadthFirst"),
-		};
+		const finder = yield* pathfinderFactory.createFinder("aStar", {
+			allowDiagonal: true,
+			heuristic: config.pathfinding.defaultHeuristic,
+			diagonalMovement: config.pathfinding.defaultDiagonalMovement,
+			weight: config.pathfinding.defaultWeight,
+		});
 
 		yield* Effect.log("created tilemap", {
 			config,
 			grid,
-			finders,
 		});
 
-		const findPath = (
-			start: PositionLiteral,
-			end: PositionLiteral,
-			algo = "aStar",
-		) => finders[algo].findPath(start.x, start.y, end.x, end.y, grid.clone());
+		const findPath = (start: PositionLiteral, end: PositionLiteral) =>
+			finder.findPath(start.x, start.y, end.x, end.y, grid.clone());
 
 		const isWalkableAt = (x: number, y: number) => grid.isWalkableAt(x, y);
 

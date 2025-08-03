@@ -1,5 +1,4 @@
 import { Effect } from "effect";
-import type * as PIXI from "pixi.js";
 import type { Viewport as PIXIViewport } from "pixi-viewport";
 
 import type { Command } from "../types.ts";
@@ -12,7 +11,7 @@ export const MoveViewport = (
 ): Command => {
 	const FIXED_TIME_STEP = 1 / 60;
 
-	const execute = (_ticker: PIXI.Ticker) =>
+	const execute = () =>
 		Effect.sync(() => {
 			const actualSpeed = speed * FIXED_TIME_STEP;
 
