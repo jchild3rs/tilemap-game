@@ -33,7 +33,9 @@ interface Components {
 		target: PositionLiteral | null;
 		bullets: Array<{
 			position: PositionLiteral;
+			target: PositionLiteral;
 			speed: number;
+			timestamp: number;
 		}>;
 	};
 	Tile: {

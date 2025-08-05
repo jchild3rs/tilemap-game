@@ -22,11 +22,12 @@ export const WeaponSystem = Effect.gen(function* () {
 
 			if (!drafted.isDrafted) continue;
 
-			weapon.target = findClosestPosition(
-				position,
-				targets,
-				weapon.range * config.CELL_SIZE,
-			);
+			weapon.target =
+				findClosestPosition(
+					position,
+					targets,
+					weapon.range * config.CELL_SIZE,
+				) || null;
 
 			if (weapon.target) {
 				const noObstacles = getGridLinePoints(
@@ -78,105 +79,266 @@ export const WeaponSystem = Effect.gen(function* () {
 		updateWeaponState(enemies, friendlyPositions);
 	});
 
-	const uiSystem = Effect.gen(function* () {
-		const entities = yield* entityManager.getAllEntitiesWithComponents([
-			"CombatStatus",
-			"Weapon",
-			"Draftable",
-			"Graphics",
-			"Position",
-		]);
+	const uiSystem = (_ticker: PIXI.Ticker) =>
+		Effect.gen(function* () {
+			const entities = yield* entityManager.getAllEntitiesWithComponents([
+				"CombatStatus",
+				"Weapon",
+				"Draftable",
+				"Graphics",
+				"Position",
+			]);
 
-		for (const entity of entities) {
-			const weapon = entity.getComponent("Weapon");
-			const drafted = entity.getComponent("Draftable");
-			const position = entity.getComponent("Position");
-			const graphics = entity.getComponent("Graphics");
+			for (const entity of entities) {
+				const weapon = entity.getComponent("Weapon");
+				const drafted = entity.getComponent("Draftable");
+				const position = entity.getComponent("Position");
+				const graphics = entity.getComponent("Graphics");
 
-			if (!drafted.isDrafted) continue;
+				let gunGraphic = graphics.graphic.getChildByLabel("Gun");
+				if (!gunGraphic) {
+					console.log("adding gun graphic");
+					const gunHeight = config.CELL_SIZE / 6;
+					const gunWidth = config.CELL_SIZE;
+					const gunStartX = config.CELL_SIZE / 2;
+					const gunStartY = config.CELL_SIZE / 2;
+					gunGraphic = graphics.graphic.addChild(
+						new PIXI.Graphics({ label: "Gun" })
+							.poly([
+								// Grip
+								gunStartX - gunHeight / 4,
+								gunStartY,
+								gunStartX + gunHeight / 4,
+								gunStartY,
+								gunStartX + gunHeight / 4,
+								gunStartY + gunHeight,
+								gunStartX - gunHeight / 4,
+								gunStartY + gunHeight,
+								// Barrel
+								gunStartX - gunHeight / 4,
+								gunStartY,
+								gunStartX - gunHeight / 4,
+								gunStartY - gunHeight / 4,
+								gunStartX + gunWidth / 2,
+								gunStartY - gunHeight / 4,
+								gunStartX + gunWidth / 2,
+								gunStartY,
+							])
+							.fill(0x000000)
+							.stroke({ width: 2, color: 0x000000 }),
+					);
+				}
 
-			const bulletContainer = new PIXI.Container({ label: "bullet" });
-			bulletContainer.addChild(
-				new PIXI.Graphics({ label: "bullet-graphic" })
-					.circle(config.CELL_SIZE / 2, config.CELL_SIZE / 2, 1)
-					.fill(0xffffff),
-			);
+				if (!drafted.isDrafted) continue;
 
-			if (!graphics.graphic.getChildByLabel("bullet")) {
-				graphics.graphic.addChild(bulletContainer);
-			}
+				const existingRangeGraphic = graphics.graphic.getChildByLabel(
+					"range",
+				) as PIXI.Graphics | undefined;
 
-			// for (const point of points) {
-			// 	const graphic = bulletGraphic.clone();
-			// 	graphic.position.set(point[0] * config.CELL_SIZE + config.CELL_SIZE / 2, point[1] * config.CELL_SIZE + config.CELL_SIZE / 2);
-			// 	bulletContainer.addChild(graphic);
-			// }
+				const rangeRadiusGraphic =
+					existingRangeGraphic ||
+					new PIXI.Graphics({
+						label: "range",
+						eventMode: "none",
+					})
+						.circle(
+							config.CELL_SIZE / 2,
+							config.CELL_SIZE / 2,
+							config.CELL_SIZE * (weapon.range - 0.8),
+						)
+						.stroke({
+							width: 1,
+							alpha: 0.2,
+							color: 0xffffff,
+						});
 
-			const existingRangeGraphic = graphics.graphic.getChildByLabel("range") as
-				| PIXI.Graphics
-				| undefined;
+				rangeRadiusGraphic.visible = weapon.isFiring;
+				// rangeRadiusGraphic.visible = false;
 
-			const rangeRadiusGraphic =
-				existingRangeGraphic ||
-				new PIXI.Graphics({
-					label: "range",
-					eventMode: "none",
-				})
-					.circle(
-						config.CELL_SIZE / 2,
-						config.CELL_SIZE / 2,
-						config.CELL_SIZE * (weapon.range - 0.8),
-					)
-					.stroke({
-						width: 1,
+				if (!existingRangeGraphic) {
+					graphics.graphic.addChild(rangeRadiusGraphic);
+				}
+
+				const existingTargetLineGraphic = graphics.graphic.getChildByLabel(
+					"target line",
+				) as PIXI.Graphics | undefined;
+
+				const targetLineGraphic =
+					existingTargetLineGraphic ||
+					new PIXI.Graphics({
+						label: "target line",
+						visible: false,
 						alpha: 0.2,
-						color: 0xffffff,
 					});
 
-			rangeRadiusGraphic.visible = weapon.isFiring;
+				if (!existingTargetLineGraphic) {
+					graphics.graphic.addChild(targetLineGraphic);
+				}
+				// targetLineGraphic.visible = Boolean(weapon.target);
+				targetLineGraphic.visible = false;
 
-			if (!existingRangeGraphic) {
-				graphics.graphic.addChild(rangeRadiusGraphic);
+				const existingBulletsGraphic = graphics.graphic.getChildByLabel(
+					"bullets",
+				) as PIXI.Graphics | undefined;
+
+				const bulletsGraphic =
+					existingBulletsGraphic ||
+					new PIXI.Graphics({
+						label: "bullets",
+					});
+
+				if (!existingBulletsGraphic) {
+					graphics.graphic.addChild(bulletsGraphic);
+				}
+
+				bulletsGraphic
+					.rect(config.CELL_SIZE / 2, config.CELL_SIZE / 2, 1, 1)
+					.fill("white");
+				bulletsGraphic.visible = weapon.bullets.length > 0;
+
+				if (!weapon.target && weapon.bullets.length > 0) {
+					weapon.bullets = [];
+				}
+
+				// bulletsGraphic.bounds.rectangle.contains(weapon)
+
+				if (weapon.target) {
+					if (weapon.bullets.length > 0) {
+						const bullet = weapon.bullets[0];
+						bulletsGraphic.visible = true;
+						if (bullet) {
+							// if (!(Math.abs(bulletsGraphic.x < newX && Math.abs(bulletsGraphic.y) < newY)) {
+							// 	bulletsGraphic.position.set(0, 0)
+							// } else {
+							// }
+							const dx = Math.round(bullet.target.x - bullet.position.x);
+							const dy = Math.round(bullet.target.y - bullet.position.y);
+
+							const now = performance.now();
+							const diff = Math.abs(bullet.timestamp - now);
+
+							// console.log({ diff }, weapon.cooldownTimer, weapon.cooldown)
+
+							if (weapon.cooldownTimer === 0 || diff < weapon.cooldownTimer) {
+								const speed = bullet.speed * 32;
+
+								// bulletsGraphic.visible = false
+								const distance = Math.sqrt(dx * dx + dy * dy);
+								const moveDistance = Math.min(speed, distance);
+								const directionX = dx / distance;
+								const directionY = dy / distance;
+								const newX = Math.round(directionX * moveDistance);
+								const newY = Math.round(directionY * moveDistance);
+
+								bulletsGraphic.x += newX;
+								bulletsGraphic.y += newY;
+
+								console.log({ distance });
+
+								// console.log(bulletsGraphic.x, bullet.target.x, newX)
+								// console.log(bulletsGraphic.y, bullet.target.y, newY)
+
+								// isHit = bulletsGraphic is "over" the cell of the bullet.target position
+								// bulletsGraphic.visible = bulletsGraphic.x < moveDistance && bulletsGraphic.y < moveDistance
+							} else {
+								bulletsGraphic.position.set(0, 0);
+								weapon.bullets = [];
+							}
+						}
+					} else {
+						bulletsGraphic.visible = false;
+					}
+
+					// const DEFAULT_GUN_ROTATION = 0.2
+					// const dx = weapon.target.x - position.x
+					// const dy = weapon.target.y - position.y
+					// switch (getDirection(dx, dy)) {
+					// 	case "right":
+					// 		gunGraphic.scale.x = 1;
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
+					// 		break;
+					// 	case "left":
+					// 		gunGraphic.scale.x *= -1;
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
+					// 		break;
+					// 	case "up-right":
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
+					// 		gunGraphic.rotation = -Math.PI / 6;
+					// 		break;
+					// 	case "up-left":
+					// 		if (gunGraphic.scale.x !== -1) {
+					// 			gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
+					// 			gunGraphic.scale.x *= -1;
+					// 		}
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
+					// 		gunGraphic.rotation = Math.PI / 6;
+					// 		break;
+					// 	case "down-left":
+					// 		if (gunGraphic.scale.x !== -1) {
+					// 			gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
+					// 			gunGraphic.scale.x *= -1;
+					// 		}
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
+					// 		gunGraphic.rotation = -Math.PI / 6;
+					// 		break;
+					// 	case "down-right":
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
+					// 		gunGraphic.rotation = Math.PI / 6;
+					// 		break;
+					// 	default:
+					// 		gunGraphic.scale.x = 1;
+					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
+					// 		break;
+					// }
+
+					targetLineGraphic.clear();
+					targetLineGraphic
+						.moveTo(0, 0)
+						.lineTo(weapon.target.x - position.x, weapon.target.y - position.y)
+						.stroke(0xffffff);
+
+					targetLineGraphic.position.set(
+						config.CELL_SIZE / 2,
+						config.CELL_SIZE / 2,
+					);
+				}
 			}
+		});
 
-			const existingTargetLineGraphic = graphics.graphic.getChildByLabel(
-				"target line",
-			) as PIXI.Graphics | undefined;
-
-			const targetLineGraphic =
-				existingTargetLineGraphic ||
-				new PIXI.Graphics({
-					label: "target line",
-					visible: false,
-					alpha: 0.2,
-				});
-
-			if (!existingTargetLineGraphic) {
-				graphics.graphic.addChild(targetLineGraphic);
-			}
-
-			targetLineGraphic.visible = Boolean(weapon.target);
-
-			if (weapon.target) {
-				targetLineGraphic.clear();
-				targetLineGraphic
-					.moveTo(0, 0)
-					.lineTo(weapon.target.x - position.x, weapon.target.y - position.y)
-					.stroke(0xffffff);
-
-				targetLineGraphic.position.set(
-					config.CELL_SIZE / 2,
-					config.CELL_SIZE / 2,
-				);
-			}
-		}
-	});
-
-	const update = (_ticker: PIXI.Ticker) =>
+	const update = (ticker: PIXI.Ticker) =>
 		Effect.gen(function* () {
 			yield* stateSystem;
-			yield* uiSystem;
+			yield* uiSystem(ticker);
 		});
 
 	return { update } as const satisfies System;
 });
+
+// function getDirection(deltaX: number, deltaY: number) {
+// 	if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+// 		return MovementDirection.Down;
+// 	}
+//
+// 	const angle = Math.atan2(deltaY, deltaX);
+// 	const degree = (angle * 180) / Math.PI;
+//
+// 	if (degree >= -22.5 && degree < 22.5) {
+// 		return MovementDirection.Right;
+// 	} else if (degree >= 22.5 && degree < 67.5) {
+// 		return MovementDirection.DownRight;
+// 	} else if (degree >= 67.5 && degree < 112.5) {
+// 		return MovementDirection.Down;
+// 	} else if (degree >= 112.5 && degree < 157.5) {
+// 		return MovementDirection.DownLeft;
+// 	} else if (degree >= 157.5 || degree < -157.5) {
+// 		return MovementDirection.Left;
+// 	} else if (degree >= -157.5 && degree < -112.5) {
+// 		return MovementDirection.UpLeft;
+// 	} else if (degree >= -112.5 && degree < -67.5) {
+// 		return MovementDirection.Up;
+// 	} else if (degree >= -67.5 && degree < -22.5) {
+// 		return MovementDirection.UpRight;
+// 	}
+//
+// 	return MovementDirection.Right;
+// }

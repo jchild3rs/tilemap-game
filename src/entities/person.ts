@@ -14,7 +14,8 @@ export class PersonEntity extends Effect.Service<PersonEntity>()(
 			const entityManager = yield* EntityManager;
 
 			const makeBody = (status: CombatStatus) => {
-				const container = new PIXI.Container({ label: "Body" });
+				const root = new PIXI.Container({ label: "Person" });
+				const container = root.addChild(new PIXI.Container({ label: "Body" }));
 
 				const torsoContainer = container.addChild(
 					new PIXI.Container({ label: "Torso" }),
@@ -123,41 +124,6 @@ export class PersonEntity extends Effect.Service<PersonEntity>()(
 						.fill(0x000000),
 				);
 
-				const gunHeight = config.CELL_SIZE / 6;
-				const gunWidth = config.CELL_SIZE;
-				const gunStartX = config.CELL_SIZE / 2;
-				const gunStartY = config.CELL_SIZE / 2;
-				const gunGraphic = container.addChild(
-					new PIXI.Graphics({ label: "Gun", visible: false })
-						.poly([
-							// Grip
-							gunStartX - gunHeight / 4,
-							gunStartY,
-							gunStartX + gunHeight / 4,
-							gunStartY,
-							gunStartX + gunHeight / 4,
-							gunStartY + gunHeight,
-							gunStartX - gunHeight / 4,
-							gunStartY + gunHeight,
-							// Barrel
-							gunStartX - gunHeight / 4,
-							gunStartY,
-							gunStartX - gunHeight / 4,
-							gunStartY - gunHeight / 4,
-							gunStartX + gunWidth / 2,
-							gunStartY - gunHeight / 4,
-							gunStartX + gunWidth / 2,
-							gunStartY,
-						])
-						.fill(0x000000)
-						.stroke({ width: 2, color: 0x000000 }),
-				);
-				// Set pivot point to center for proper rotation
-				gunGraphic.pivot.set(gunStartX, gunStartY);
-
-				// Position relative to a container center
-				gunGraphic.position.set(config.CELL_SIZE / 2, config.CELL_SIZE / 2);
-
 				const BASE_GUN_RANGE = 5;
 				const gunRadiusGraphic = container.addChild(
 					new PIXI.Graphics({ alpha: 0.25, label: "Gun Radius" })
@@ -170,7 +136,7 @@ export class PersonEntity extends Effect.Service<PersonEntity>()(
 				);
 				gunRadiusGraphic.visible = false;
 
-				return container;
+				return root;
 			};
 
 			const create = (position: PositionLiteral, status: CombatStatus) =>

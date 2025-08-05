@@ -22,8 +22,23 @@ export const MovementSystem = Effect.gen(function* () {
 			for (const entity of entities) {
 				const movement = entity.getComponent("Movement");
 				const position = entity.getComponent("Position");
+				const health = entity.getComponent("Health");
+				const input = entity.getComponent("Input");
 
-				if (movement.isWandering && movement.path.length === 0) {
+				if (health) {
+					if (health.currentHealth === 0) {
+						movement.isMoving = false;
+						movement.path = [];
+						movement.currentPathIndex = 0;
+						continue;
+					}
+				}
+
+				if (
+					input.isPlayerControlled &&
+					movement.isWandering &&
+					movement.path.length === 0
+				) {
 					const pos = tilemap.getRandomWalkablePosition();
 					movement.path = [
 						tilemap.findPath(conversion.worldToGrid(position), pos),

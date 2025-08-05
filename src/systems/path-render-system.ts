@@ -122,6 +122,7 @@ export const PathRenderSystem = Effect.gen(function* () {
 
 				if (hasReachedTarget) {
 					pathTargetContainer.removeChildren();
+					pathLineGraphic.clear();
 				}
 			}
 		});

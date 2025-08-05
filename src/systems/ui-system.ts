@@ -64,11 +64,13 @@ export const UISystem = Effect.gen(function* () {
 				"Person",
 				"Position",
 				"Graphics",
+				"Health",
 			]);
 
 			for (const entity of entities) {
 				const person = entity.getComponent("Person");
 				const graphics = entity.getComponent("Graphics");
+				const health = entity.getComponent("Health");
 
 				const graphic = graphics.graphic.getChildByLabel("name") as
 					| PIXI.Text
@@ -78,7 +80,7 @@ export const UISystem = Effect.gen(function* () {
 						text: person.firstName,
 						style: {
 							fill: "#ffffff",
-							fontSize: config.CELL_SIZE / 4,
+							fontSize: config.CELL_SIZE / 6,
 						},
 						label: "name",
 						anchor: 0.5,
@@ -86,6 +88,10 @@ export const UISystem = Effect.gen(function* () {
 					text.position.set(config.CELL_SIZE / 2, config.CELL_SIZE);
 					graphics.graphic.addChild(text);
 				} else {
+				}
+
+				if (graphic && health.currentHealth === 0) {
+					graphic.visible = false;
 				}
 			}
 		});

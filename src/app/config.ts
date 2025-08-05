@@ -35,7 +35,7 @@ export const ConfigLive = Layer.effect(
 		yield* Effect.log("created config");
 
 		const CELL_SIZE = 32;
-		const WORLD_SIZE = 24; // eg, * CELL_SIZE
+		const WORLD_SIZE = 56; // eg, * CELL_SIZE
 
 		const worldSize = {
 			width: WORLD_SIZE * CELL_SIZE,
@@ -100,7 +100,7 @@ export const ConfigLive = Layer.effect(
 
 		const zoom = {
 			min: 0.5,
-			max: 2,
+			max: 5,
 			default: 1,
 		};
 

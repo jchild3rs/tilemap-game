@@ -7,8 +7,8 @@ const makeStage = Effect.gen(function* () {
 	const stage = new PIXI.Container({
 		width: window.innerWidth,
 		height: window.innerHeight,
-		label: "Stage",
 		position: { x: 0, y: 0 },
+		label: "Stage",
 	});
 
 	// @ts-ignore

@@ -8,6 +8,12 @@ export const DamageSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
 	const positionConversion = yield* PositionConversion;
 
+	const audio = new Audio("/assets/sounds/pistol-shot.mp3");
+	const audioContext = new AudioContext();
+	audioContext
+		.createMediaElementSource(audio)
+		.connect(audioContext.destination);
+
 	const update = (ticker: PIXI.Ticker) =>
 		Effect.gen(function* () {
 			const entities = yield* entityManager.getAllEntitiesWithComponents([
@@ -32,59 +38,33 @@ export const DamageSystem = Effect.gen(function* () {
 			}
 
 			for (const entity of entities) {
-				const health = entity.getComponent("Health");
+				// const health = entity.getComponent("Health");
 				const weapon = entity.getComponent("Weapon");
 				const draftable = entity.getComponent("Draftable");
 				const person = entity.getComponent("Person");
-
-				if (health.currentHealth === 0) {
-					continue;
-				}
+				const position = entity.getComponent("Position");
+				// const graphics = entity.getComponent("Graphics");
+				//
+				// if (health.currentHealth === 0) {
+				// 	if (person && graphics) {
+				// 		graphics.graphic.pivot.set(config.CELL_SIZE / 2, config.CELL_SIZE / 2)
+				// 		graphics.graphic.rotation = Math.PI / 4; // Rotate 45 degrees
+				// 	}
+				// 	continue;
+				// }
 
 				if (weapon.target && weapon.isFiring && draftable.isDrafted) {
-					// console.log('start')
-					// yield* Effect.sleep(weapon.cooldownTimer)
-					// console.log('stop')
 					const targetedEntity = getEntityAtPosition(weapon.target);
-					// console.log({targetedEntity})
 					if (!targetedEntity) continue;
 
 					const targetedEntityHealth = targetedEntity.getComponent("Health");
-					// const targetedEntityGraphics =
-					// 	targetedEntity.getComponent("Graphics");
+					const targetedEntityMovement =
+						targetedEntity.getComponent("Movement");
+					const isTargetMoving = targetedEntityMovement?.isMoving ?? false;
 
 					const targetPerson = targetedEntity.getComponent("Person");
 					if (targetedEntityHealth.currentHealth === 0) {
 						yield* Effect.logDebug(`${targetPerson.firstName} is dead.`);
-					}
-
-					if (
-						weapon.cooldownTimer === 0 &&
-						targetedEntityHealth.currentHealth > 0
-					) {
-						const isHit = weapon.hitPercentage > Math.random();
-
-						if (!isHit) {
-							yield* Effect.logDebug(
-								`${person.firstName} missed ${targetPerson.firstName}`,
-							);
-						} else {
-							const damage = weapon.damagePerHit;
-
-							targetedEntityHealth.currentHealth = Math.max(
-								0,
-								targetedEntityHealth.currentHealth - damage,
-							);
-							// targetedEntityGraphics.graphic.alpha =
-							// 	targetedEntityHealth.currentHealth / targetedEntityHealth.maxHealth;
-
-							if (targetedEntityHealth.currentHealth === 0) {
-								yield* Effect.logDebug(`${targetPerson.firstName} is dead.`);
-							}
-							yield* Effect.logDebug(
-								`${person.firstName} applying ${damage} damage to ${targetPerson.firstName} (${targetedEntityHealth.currentHealth}/${targetedEntityHealth.maxHealth})`,
-							);
-						}
 					}
 
 					if (weapon.cooldownTimer === 0) {
@@ -95,6 +75,47 @@ export const DamageSystem = Effect.gen(function* () {
 							weapon.cooldownTimer - ticker.deltaTime * 10,
 						);
 					}
+
+					if (
+						weapon.cooldownTimer === 0 &&
+						targetedEntityHealth.currentHealth > 0
+					) {
+						const isHit =
+							weapon.hitPercentage - (isTargetMoving ? 0.4 : 0) > Math.random();
+
+						yield* Effect.log("queuing bullet");
+
+						weapon.bullets = [
+							{
+								position: position,
+								target: weapon.target,
+								speed: 0.1,
+								timestamp: performance.now(),
+							},
+						];
+
+						if (!isHit) {
+							yield* Effect.logDebug(
+								`${person.firstName} missed ${targetPerson.firstName}`,
+							);
+						} else {
+							void audio.play();
+							const damage = weapon.damagePerHit;
+
+							targetedEntityHealth.currentHealth = Math.max(
+								0,
+								targetedEntityHealth.currentHealth - damage,
+							);
+
+							yield* Effect.logDebug(
+								`${person.firstName} applying ${damage} damage to ${targetPerson.firstName} (${targetedEntityHealth.currentHealth}/${targetedEntityHealth.maxHealth})`,
+							);
+
+							if (targetedEntityHealth.currentHealth === 0) {
+								yield* Effect.logDebug(`${targetPerson.firstName} is dead.`);
+							}
+						}
+					}
 				}
 			}
 		}).pipe(
@@ -102,5 +123,22 @@ export const DamageSystem = Effect.gen(function* () {
 			Effect.withSpan("DamageSystem.update"),
 		);
 
-	return { update } as const satisfies System;
+	return {
+		update,
+		mount: () =>
+			Effect.sync(() => {
+				window.addEventListener(
+					"load",
+					() => {
+						if (audioContext.state === "suspended") {
+							void audioContext.resume();
+						}
+
+						void audio.play();
+						void audio.pause();
+					},
+					{ once: true },
+				);
+			}),
+	} as const satisfies System;
 });

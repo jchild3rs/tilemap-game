@@ -78,7 +78,7 @@ export const GameEngine = Effect.gen(function* () {
 		}
 	}
 
-	for (let i = 0; i < 50; i++) {
+	for (let i = 0; i < 20; i++) {
 		const gridPosition = tilemap.getRandomWalkablePosition();
 		tilemap.setWalkableAt(gridPosition.x, gridPosition.y, false);
 		const worldPosition = yield* conversion.gridToWorld(gridPosition);
@@ -89,22 +89,20 @@ export const GameEngine = Effect.gen(function* () {
 		yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
 		"hostile",
 	);
-	yield* PersonEntity.create(
-		yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-		"hostile",
-	);
-	yield* PersonEntity.create(
-		yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-		"friendly",
-	);
-	yield* PersonEntity.create(
-		yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-		"friendly",
-	);
-	yield* PersonEntity.create(
-		yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-		"friendly",
-	);
+
+	for (let i = 0; i < 30; i++) {
+		yield* PersonEntity.create(
+			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
+			"friendly",
+		);
+	}
+
+	for (let i = 0; i < 10; i++) {
+		yield* PersonEntity.create(
+			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
+			"hostile",
+		);
+	}
 
 	// Stream game loop and update systems
 	yield* Stream.async(
