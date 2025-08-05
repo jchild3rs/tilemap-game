@@ -18,7 +18,7 @@
 		"@biomejs/biome": "2.1.1",
 		"@effect/language-service": "^0.31.2",
 		"@types/pathfinding": "^0.1.0",
-		"typescript": "^5.9.0-beta",
+		"typescript": "^5.9.2",
 		"vite": "^7.0.3",
 		"vitest": "^3.2.4"
 	},

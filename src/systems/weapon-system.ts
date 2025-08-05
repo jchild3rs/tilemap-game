@@ -249,48 +249,6 @@ export const WeaponSystem = Effect.gen(function* () {
 						bulletsGraphic.visible = false;
 					}
 
-					// const DEFAULT_GUN_ROTATION = 0.2
-					// const dx = weapon.target.x - position.x
-					// const dy = weapon.target.y - position.y
-					// switch (getDirection(dx, dy)) {
-					// 	case "right":
-					// 		gunGraphic.scale.x = 1;
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
-					// 		break;
-					// 	case "left":
-					// 		gunGraphic.scale.x *= -1;
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
-					// 		break;
-					// 	case "up-right":
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
-					// 		gunGraphic.rotation = -Math.PI / 6;
-					// 		break;
-					// 	case "up-left":
-					// 		if (gunGraphic.scale.x !== -1) {
-					// 			gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
-					// 			gunGraphic.scale.x *= -1;
-					// 		}
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
-					// 		gunGraphic.rotation = Math.PI / 6;
-					// 		break;
-					// 	case "down-left":
-					// 		if (gunGraphic.scale.x !== -1) {
-					// 			gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
-					// 			gunGraphic.scale.x *= -1;
-					// 		}
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION * -1;
-					// 		gunGraphic.rotation = -Math.PI / 6;
-					// 		break;
-					// 	case "down-right":
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
-					// 		gunGraphic.rotation = Math.PI / 6;
-					// 		break;
-					// 	default:
-					// 		gunGraphic.scale.x = 1;
-					// 		gunGraphic.rotation = DEFAULT_GUN_ROTATION;
-					// 		break;
-					// }
-
 					targetLineGraphic.clear();
 					targetLineGraphic
 						.moveTo(0, 0)
@@ -313,32 +271,3 @@ export const WeaponSystem = Effect.gen(function* () {
 
 	return { update } as const satisfies System;
 });
-
-// function getDirection(deltaX: number, deltaY: number) {
-// 	if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
-// 		return MovementDirection.Down;
-// 	}
-//
-// 	const angle = Math.atan2(deltaY, deltaX);
-// 	const degree = (angle * 180) / Math.PI;
-//
-// 	if (degree >= -22.5 && degree < 22.5) {
-// 		return MovementDirection.Right;
-// 	} else if (degree >= 22.5 && degree < 67.5) {
-// 		return MovementDirection.DownRight;
-// 	} else if (degree >= 67.5 && degree < 112.5) {
-// 		return MovementDirection.Down;
-// 	} else if (degree >= 112.5 && degree < 157.5) {
-// 		return MovementDirection.DownLeft;
-// 	} else if (degree >= 157.5 || degree < -157.5) {
-// 		return MovementDirection.Left;
-// 	} else if (degree >= -157.5 && degree < -112.5) {
-// 		return MovementDirection.UpLeft;
-// 	} else if (degree >= -112.5 && degree < -67.5) {
-// 		return MovementDirection.Up;
-// 	} else if (degree >= -67.5 && degree < -22.5) {
-// 		return MovementDirection.UpRight;
-// 	}
-//
-// 	return MovementDirection.Right;
-// }

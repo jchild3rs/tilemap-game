@@ -4,7 +4,10 @@ import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
 import { Tilemap } from "../app/tilemap.ts";
 import { PositionConversion } from "../services/position-conversion.ts";
-import type { System } from "../types.ts";
+import {
+	MovementDirection,
+	type System,
+} from '../types.ts';
 
 export const MovementSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
@@ -68,6 +71,7 @@ export const MovementSystem = Effect.gen(function* () {
 					const dx = nextWorldPosition.x - position.x;
 					const dy = nextWorldPosition.y - position.y;
 					const distance = Math.sqrt(dx * dx + dy * dy);
+					movement.direction = getDirection(dx, dy);
 
 					// If there's a pending path and we need to switch to it
 					if (movement.pendingPath && movement.pendingPath.length > 0) {
@@ -115,3 +119,32 @@ export const MovementSystem = Effect.gen(function* () {
 
 	return { update } as const satisfies System;
 });
+
+function getDirection(deltaX: number, deltaY: number) {
+	if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) {
+		return MovementDirection.Down;
+	}
+
+	const angle = Math.atan2(deltaY, deltaX);
+	const degree = (angle * 180) / Math.PI;
+
+	if (degree >= -22.5 && degree < 22.5) {
+		return MovementDirection.Right;
+	} else if (degree >= 22.5 && degree < 67.5) {
+		return MovementDirection.DownRight;
+	} else if (degree >= 67.5 && degree < 112.5) {
+		return MovementDirection.Down;
+	} else if (degree >= 112.5 && degree < 157.5) {
+		return MovementDirection.DownLeft;
+	} else if (degree >= 157.5 || degree < -157.5) {
+		return MovementDirection.Left;
+	} else if (degree >= -157.5 && degree < -112.5) {
+		return MovementDirection.UpLeft;
+	} else if (degree >= -112.5 && degree < -67.5) {
+		return MovementDirection.Up;
+	} else if (degree >= -67.5 && degree < -22.5) {
+		return MovementDirection.UpRight;
+	}
+
+	return MovementDirection.Right;
+}
