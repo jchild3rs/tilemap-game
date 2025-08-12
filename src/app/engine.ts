@@ -13,9 +13,10 @@ import { InputSystem } from "../systems/input-system.ts";
 import { LayerRenderSystem } from "../systems/layer-render-system.ts";
 import { MovementSystem } from "../systems/movement-system.ts";
 import { PathRenderSystem } from "../systems/path-render-system.ts";
+import { PersonDamageSystem } from "../systems/person-damage-system.ts";
+import { PersonNameSystem } from "../systems/person-name-system.ts";
 import { SelectionSystem } from "../systems/selection-system.ts";
 import { TilemapRenderSystem } from "../systems/tilemap-render-system.ts";
-import { UISystem } from "../systems/ui-system.ts";
 import { WalkableSystem } from "../systems/walkable-system.ts";
 import { WeaponSystem } from "../systems/weapon-system.ts";
 import type { System } from "../types.ts";
@@ -44,65 +45,11 @@ export const GameEngine = Effect.gen(function* () {
 			DraftSystem,
 			WeaponSystem,
 			DamageSystem,
-			UISystem,
+			PersonNameSystem,
+			PersonDamageSystem,
 		],
 		{ concurrency: "unbounded" },
 	);
-
-	const lakeSizeRatioFromWorldSize = Math.random() * 0.2 + 0.1;
-	const lakeCount = config.WORLD_SIZE * lakeSizeRatioFromWorldSize;
-	for (let i = 0; i < lakeCount; i++) {
-		const gridPosition = tilemap.getRandomWalkablePosition();
-		const positions = pathfinding.generateFormationPositions(10, gridPosition);
-		for (const position of positions) {
-			const worldPosition = yield* conversion.gridToWorld(position);
-			yield* WaterEntity.create(worldPosition);
-		}
-	}
-
-	const mountainSizeRatioFromWorldSize = Math.random() * 0.2 + 0.1;
-	const mountainCount =
-		(config.WORLD_SIZE * mountainSizeRatioFromWorldSize) / 2;
-
-	for (let i = 0; i < mountainCount; i++) {
-		const gridPosition = tilemap.getRandomWalkablePosition();
-		const worldPosition = yield* conversion.gridToWorld(gridPosition);
-
-		yield* MountainEntity.create(worldPosition);
-
-		const positions = pathfinding.generateFormationPositions(20, gridPosition);
-		for (const position of positions) {
-			tilemap.setWalkableAt(position.x, position.y, false);
-			const worldPosition = yield* conversion.gridToWorld(position);
-			yield* MountainEntity.create(worldPosition);
-		}
-	}
-
-	for (let i = 0; i < 20; i++) {
-		const gridPosition = tilemap.getRandomWalkablePosition();
-		tilemap.setWalkableAt(gridPosition.x, gridPosition.y, false);
-		const worldPosition = yield* conversion.gridToWorld(gridPosition);
-		yield* WallEntity.create(worldPosition);
-	}
-
-	yield* PersonEntity.create(
-		yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-		"hostile",
-	);
-
-	for (let i = 0; i < 30; i++) {
-		yield* PersonEntity.create(
-			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-			"friendly",
-		);
-	}
-
-	for (let i = 0; i < 10; i++) {
-		yield* PersonEntity.create(
-			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
-			"hostile",
-		);
-	}
 
 	// Stream game loop and update systems
 	yield* Stream.async(
@@ -120,9 +67,66 @@ export const GameEngine = Effect.gen(function* () {
 		Effect.forkDaemon,
 	);
 
-	for (const system of systems) {
-		if (system.mount) {
-			yield* system.mount();
+	yield* Stream.async(
+		(emit: StreamEmit.Emit<never, never, PIXI.Ticker, void>) => {
+			ticker.addOnce((t) => emit(Effect.succeed(Chunk.of(t))));
+		},
+	).pipe(
+		Stream.tap(() =>
+			Effect.all(
+				systems.map((system) => system.mount?.() ?? Effect.void),
+				{ concurrency: "unbounded" },
+			),
+		),
+		Stream.runDrain,
+		Effect.forkDaemon,
+	);
+
+	const lakeSizeRatioFromWorldSize = Math.random() * 0.2 + 0.1;
+	const lakeCount = config.WORLD_SIZE * lakeSizeRatioFromWorldSize;
+	for (let i = 0; i < lakeCount; i++) {
+		const gridPosition = tilemap.getRandomWalkablePosition();
+		const positions = pathfinding.generateFormationPositions(10, gridPosition);
+		for (const position of positions) {
+			const worldPosition = yield* conversion.gridToWorld(position);
+			yield* WaterEntity.create(worldPosition);
 		}
+	}
+
+	const mountainSizeRatioFromWorldSize = Math.random() * 0.2 + 0.1;
+	const mountainCount = config.WORLD_SIZE * mountainSizeRatioFromWorldSize;
+
+	for (let i = 0; i < mountainCount; i++) {
+		const gridPosition = tilemap.getRandomWalkablePosition();
+		const worldPosition = yield* conversion.gridToWorld(gridPosition);
+
+		yield* MountainEntity.create(worldPosition);
+
+		const positions = pathfinding.generateFormationPositions(20, gridPosition);
+		for (const position of positions) {
+			tilemap.setWalkableAt(position.x, position.y, false);
+			const worldPosition = yield* conversion.gridToWorld(position);
+			yield* MountainEntity.create(worldPosition);
+		}
+	}
+
+	for (let i = 0; i < 20; i++) {
+		yield* WallEntity.create(
+			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
+		);
+	}
+
+	for (let i = 0; i < 75; i++) {
+		yield* PersonEntity.create(
+			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
+			"friendly",
+		);
+	}
+
+	for (let i = 0; i < 50; i++) {
+		yield* PersonEntity.create(
+			yield* conversion.gridToWorld(tilemap.getRandomWalkablePosition()),
+			"hostile",
+		);
 	}
 });

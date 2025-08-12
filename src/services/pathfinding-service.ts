@@ -63,7 +63,12 @@ export const PathfindingLive = Layer.effect(
 			}
 
 			// Basic walkable check
-			if (!tilemap.isWalkableAt(position.x, position.y)) {
+			if (
+				!tilemap.isWalkableAt(
+					Math.min(position.x, config.WORLD_SIZE - 1),
+					position.y,
+				)
+			) {
 				return false;
 			}
 
@@ -80,9 +85,9 @@ export const PathfindingLive = Layer.effect(
 					// Count unwalkable neighboring tiles
 					if (
 						nx < 0 ||
-						nx >= tilemap.grid.width * config.CELL_SIZE ||
+						nx >= config.WORLD_SIZE ||
 						ny < 0 ||
-						ny >= tilemap.grid.height * config.CELL_SIZE ||
+						ny >= config.WORLD_SIZE ||
 						!tilemap.isWalkableAt(nx, ny)
 					) {
 						blockedNeighbors++;
@@ -93,13 +98,6 @@ export const PathfindingLive = Layer.effect(
 			// If too many neighbors are blocked, this position is too constrained
 			return blockedNeighbors <= 6;
 		};
-
-		// const generateLakePositions = (
-		// 	center: PositionLiteral,
-		// ) => {
-		// 	const positions: PositionLiteral[] = [];
-		//
-		// }
 
 		const generateSpiralPositions = (
 			center: PositionLiteral,
@@ -117,8 +115,8 @@ export const PathfindingLive = Layer.effect(
 				const y = Math.round(center.y + d * Math.sin(angle));
 
 				const pos = {
-					x: clamp(0, tilemap.grid.width * config.CELL_SIZE - 1, x),
-					y: clamp(0, tilemap.grid.height * config.CELL_SIZE - 1, y),
+					x: clamp(0, config.WORLD_SIZE - 1, x),
+					y: clamp(0, config.WORLD_SIZE - 1, y),
 				};
 
 				// Add if not already in the list
@@ -156,12 +154,11 @@ export const PathfindingLive = Layer.effect(
 			// If we still need more positions, find them using pathfinding
 			while (positions.length < targetCount) {
 				// Start with the center and expand outward
-				const searchGrid = tilemap.grid;
 
 				// Mark existing positions as unwalkable to find new ones
 				positions.forEach((pos) => {
-					if (searchGrid.isWalkableAt(pos.x, pos.y)) {
-						searchGrid.setWalkableAt(pos.x, pos.y, false);
+					if (tilemap.isWalkableAt(pos.x, pos.y)) {
+						tilemap.setWalkableAt(pos.x, pos.y, false);
 					}
 				});
 
@@ -180,7 +177,7 @@ export const PathfindingLive = Layer.effect(
 
 					// If this position is valid, use it
 					if (
-						searchGrid.isWalkableAt(current.x, current.y) &&
+						tilemap.isWalkableAt(current.x, current.y) &&
 						isValidFormationPosition(current)
 					) {
 						foundPos = current;
@@ -197,9 +194,9 @@ export const PathfindingLive = Layer.effect(
 
 							if (
 								nx >= 0 &&
-								nx < tilemap.grid.width * config.CELL_SIZE &&
+								nx < config.WORLD_SIZE &&
 								ny >= 0 &&
-								ny < tilemap.grid.height * config.CELL_SIZE
+								ny < config.WORLD_SIZE
 							) {
 								queue.push({ x: nx, y: ny });
 							}
@@ -234,8 +231,8 @@ export const PathfindingLive = Layer.effect(
 
 			// First try the center position
 			const centerPos = {
-				x: clamp(0, tilemap.grid.width * config.CELL_SIZE - 1, center.x),
-				y: clamp(0, tilemap.grid.height * config.CELL_SIZE - 1, center.y),
+				x: clamp(0, config.WORLD_SIZE - 1, center.x),
+				y: clamp(0, config.WORLD_SIZE - 1, center.y),
 			};
 
 			if (isValidFormationPosition(centerPos)) {

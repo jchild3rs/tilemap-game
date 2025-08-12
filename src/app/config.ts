@@ -1,5 +1,4 @@
 import { Context, Effect, Layer } from "effect";
-import { DiagonalMovement, Heuristic } from "pathfinding";
 
 export class Config extends Context.Tag("Config")<
 	Config,
@@ -9,12 +8,6 @@ export class Config extends Context.Tag("Config")<
 		worldSize: {
 			width: number;
 			height: number;
-		};
-		pathfinding: {
-			defaultAlgorithm: string;
-			defaultHeuristic(dx: number, dy: number): number;
-			defaultDiagonalMovement: DiagonalMovement;
-			defaultWeight: number;
 		};
 		person: {
 			baseMovementSpeed: number;
@@ -35,23 +28,11 @@ export const ConfigLive = Layer.effect(
 		yield* Effect.log("created config");
 
 		const CELL_SIZE = 32;
-		const WORLD_SIZE = 56; // eg, * CELL_SIZE
+		const WORLD_SIZE = 52; // eg, * CELL_SIZE
 
 		const worldSize = {
 			width: WORLD_SIZE * CELL_SIZE,
 			height: WORLD_SIZE * CELL_SIZE,
-		};
-
-		const pathfinding: {
-			defaultAlgorithm: "aStar" | "biAStar" | "breadthFirst" | "biBreadthFirst";
-			defaultHeuristic(dx: number, dy: number): number;
-			defaultDiagonalMovement: DiagonalMovement;
-			defaultWeight: number;
-		} = {
-			defaultAlgorithm: "aStar",
-			defaultHeuristic: Heuristic.manhattan,
-			defaultDiagonalMovement: DiagonalMovement.OnlyWhenNoObstacles,
-			defaultWeight: 1,
 		};
 
 		const ground = {
@@ -108,7 +89,6 @@ export const ConfigLive = Layer.effect(
 			CELL_SIZE,
 			WORLD_SIZE,
 			worldSize,
-			pathfinding,
 			ground,
 			rendering,
 			person,

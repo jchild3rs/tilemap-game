@@ -4,10 +4,7 @@ import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
 import { Tilemap } from "../app/tilemap.ts";
 import { PositionConversion } from "../services/position-conversion.ts";
-import {
-	MovementDirection,
-	type System,
-} from '../types.ts';
+import { MovementDirection, type System } from "../types.ts";
 
 export const MovementSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
@@ -86,11 +83,17 @@ export const MovementSystem = Effect.gen(function* () {
 
 					// Normal movement code - only move if we need to move
 					if (distance > 0.1) {
-						const speed =
+						const cost = tilemap.getCostAt(nextGridX, nextGridY);
+
+						let speed =
 							movement.speed *
 							ticker.speed *
-							32 *
+							128 *
 							(movement.isWandering ? 0.25 : 1);
+
+						if (cost > 1) {
+							speed = speed * cost * 0.1;
+						}
 						const moveDistance = Math.min(speed, distance);
 
 						const directionX = dx / distance;

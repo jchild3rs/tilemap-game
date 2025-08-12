@@ -114,6 +114,19 @@ export class PersonEntity extends Effect.Service<PersonEntity>()(
 				);
 				leftEye.position.set(0, 0);
 
+				const leftEyeDead = headContainer.addChild(
+					new PIXI.Graphics({ label: "Left Eye Dead" })
+						.rect(
+							config.CELL_SIZE / 2 - config.CELL_SIZE / 8,
+							config.CELL_SIZE / 4.5,
+							3,
+							1,
+						)
+						.fill(0x000000),
+				);
+				leftEyeDead.position.set(0, 0);
+				leftEyeDead.visible = false;
+
 				headContainer.addChild(
 					new PIXI.Graphics({ label: "Right Eye" })
 						.circle(
@@ -123,6 +136,14 @@ export class PersonEntity extends Effect.Service<PersonEntity>()(
 						)
 						.fill(0x000000),
 				);
+
+				const rightEyeDead = headContainer.addChild(
+					new PIXI.Graphics({ label: "Right Eye Dead" })
+						.rect(config.CELL_SIZE / 2, config.CELL_SIZE / 4.5, 3, 1)
+						.fill(0x000000),
+				);
+				rightEyeDead.position.set(0, 0);
+				rightEyeDead.visible = false;
 
 				const BASE_GUN_RANGE = 5;
 				const gunRadiusGraphic = container.addChild(

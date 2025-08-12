@@ -9,7 +9,6 @@ import { TickerLive } from "./app/ticker.ts";
 import { TilemapLive } from "./app/tilemap.ts";
 import { ViewportLive } from "./app/viewport.ts";
 import { EntityLayer } from "./entities/layer.ts";
-import { PathfinderFactoryLive } from "./services/pathfinder-factory.ts";
 import { PathfindingLive } from "./services/pathfinding-service.ts";
 import { PositionConversionLive } from "./services/position-conversion.ts";
 
@@ -24,7 +23,6 @@ BrowserRuntime.runMain(
 		Effect.provide(TilemapLive),
 		Effect.provide(StageLive),
 		Effect.provide(RendererLive),
-		Effect.provide(PathfinderFactoryLive),
 		Effect.provide(ConfigLive),
 		Logger.withMinimumLogLevel(LogLevel.Debug),
 	),

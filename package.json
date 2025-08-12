@@ -17,7 +17,6 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.1.1",
 		"@effect/language-service": "^0.31.2",
-		"@types/pathfinding": "^0.1.0",
 		"typescript": "^5.9.2",
 		"vite": "^7.0.3",
 		"vitest": "^3.2.4"
@@ -30,11 +29,8 @@
 		"@opentelemetry/sdk-logs": "^0.203.0",
 		"@opentelemetry/sdk-metrics": "^2.0.1",
 		"@opentelemetry/sdk-trace-base": "^2.0.1",
-		"@opentelemetry/sdk-trace-node": "^2.0.1",
 		"@opentelemetry/sdk-trace-web": "^2.0.1",
-		"@pixi/math-extras": "^7.4.3",
 		"effect": "^3.16.16",
-		"pathfinding": "^0.4.18",
 		"pixi-viewport": "^6.0.3",
 		"pixi.js": "^8.11.0"
 	}

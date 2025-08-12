@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import type * as PIXI from "pixi.js";
+import { EntityManager } from "../app/entity-manager.ts";
 import { Viewport } from "../app/viewport.ts";
 import { PositionConversion } from "../services/position-conversion.ts";
 
@@ -8,6 +9,7 @@ import type { System } from "../types.ts";
 export const DebugSystem = Effect.gen(function* () {
 	const viewport = yield* Viewport;
 	const positionConversion = yield* PositionConversion;
+	const entityManager = yield* EntityManager;
 
 	const debugContainer = document.createElement("div");
 	debugContainer.style.cssText = `
@@ -47,10 +49,10 @@ export const DebugSystem = Effect.gen(function* () {
 
 	debugContainer.appendChild(fpsContainer);
 
-	// console.log(entityManager, config);
-
 	const mount = () =>
-		Effect.sync(() => {
+		Effect.gen(function* () {
+			const all = yield* entityManager.getAllEntities;
+
 			document.body.appendChild(debugContainer);
 
 			viewport.on("pointermove", (event) => {
@@ -60,7 +62,9 @@ export const DebugSystem = Effect.gen(function* () {
 				positionContainer.innerText = `
 			Screen: ${Math.floor(screenPosition.x)}, ${Math.floor(screenPosition.y)}
 Viewport: ${Math.floor(viewportPosition.x)}, ${Math.floor(viewportPosition.y)}
-Grid: ${gridPosition.x}, ${gridPosition.y}`;
+Grid: ${gridPosition.x}, ${gridPosition.y}
+Total entities: ${all.length}
+			`;
 			});
 		});
 

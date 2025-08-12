@@ -182,8 +182,8 @@ export const InputSystem = Effect.gen(function* () {
 			// console.log({ targetIsInCurrentPositions });
 
 			if (targetIsInCurrentPositions) {
-				alert("TODO: context menu on the thing you clicked");
-				return;
+				// alert("TODO: context menu on the thing you clicked");
+				// return;
 			}
 
 			const selectedEntities = entities.filter((e) => {

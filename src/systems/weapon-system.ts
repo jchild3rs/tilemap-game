@@ -3,16 +3,12 @@ import * as PIXI from "pixi.js";
 import { Config } from "../app/config.ts";
 import type { Entity } from "../app/entity.ts";
 import { EntityManager } from "../app/entity-manager.ts";
-import { Tilemap } from "../app/tilemap.ts";
-import { PositionConversion } from "../services/position-conversion.ts";
 import type { PositionLiteral, System } from "../types.ts";
-import { findClosestPosition, getGridLinePoints } from "../utils.ts";
+import { findClosestPosition } from "../utils.ts";
 
 export const WeaponSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
 	const config = yield* Config;
-	const tilemap = yield* Tilemap;
-	const positionConversion = yield* PositionConversion;
 
 	function updateWeaponState(entities: Entity[], targets: PositionLiteral[]) {
 		for (const entity of entities) {
@@ -30,10 +26,10 @@ export const WeaponSystem = Effect.gen(function* () {
 				) || null;
 
 			if (weapon.target) {
-				const noObstacles = getGridLinePoints(
-					positionConversion.worldToGrid(position),
-					positionConversion.worldToGrid(weapon.target),
-				).every((point) => tilemap.isWalkableAt(point[0], point[1]));
+				// const noObstacles = getGridLinePoints(
+				// 	positionConversion.worldToGrid(position),
+				// 	positionConversion.worldToGrid(weapon.target),
+				// ).every((point) => tilemap.isWalkableAt(point[0], point[1]));
 
 				const isWithinRange =
 					position.x > weapon.target.x - config.CELL_SIZE * weapon.range &&
@@ -41,7 +37,8 @@ export const WeaponSystem = Effect.gen(function* () {
 					position.x < weapon.target.x + config.CELL_SIZE * weapon.range &&
 					position.y < weapon.target.y + config.CELL_SIZE * weapon.range;
 
-				weapon.isFiring = noObstacles && isWithinRange;
+				// weapon.isFiring = noObstacles && isWithinRange;
+				weapon.isFiring = isWithinRange;
 			}
 		}
 	}
@@ -97,67 +94,74 @@ export const WeaponSystem = Effect.gen(function* () {
 
 				let gunGraphic = graphics.graphic.getChildByLabel("Gun");
 				if (!gunGraphic) {
-					console.log("adding gun graphic");
 					const gunHeight = config.CELL_SIZE / 6;
 					const gunWidth = config.CELL_SIZE;
 					const gunStartX = config.CELL_SIZE / 2;
 					const gunStartY = config.CELL_SIZE / 2;
-					gunGraphic = graphics.graphic.addChild(
-						new PIXI.Graphics({ label: "Gun" })
-							.poly([
-								// Grip
-								gunStartX - gunHeight / 4,
-								gunStartY,
-								gunStartX + gunHeight / 4,
-								gunStartY,
-								gunStartX + gunHeight / 4,
-								gunStartY + gunHeight,
-								gunStartX - gunHeight / 4,
-								gunStartY + gunHeight,
-								// Barrel
-								gunStartX - gunHeight / 4,
-								gunStartY,
-								gunStartX - gunHeight / 4,
-								gunStartY - gunHeight / 4,
-								gunStartX + gunWidth / 2,
-								gunStartY - gunHeight / 4,
-								gunStartX + gunWidth / 2,
-								gunStartY,
-							])
-							.fill(0x000000)
-							.stroke({ width: 2, color: 0x000000 }),
-					);
+					const gunContainer = new PIXI.Container({ label: "Gun" });
+					gunGraphic = new PIXI.Graphics({ label: "Gun Graphic" })
+						.poly([
+							// Grip
+							gunStartX - gunHeight / 4,
+							gunStartY,
+							gunStartX + gunHeight / 4,
+							gunStartY,
+							gunStartX + gunHeight / 4,
+							gunStartY + gunHeight,
+							gunStartX - gunHeight / 4,
+							gunStartY + gunHeight,
+							// Barrel
+							gunStartX - gunHeight / 4,
+							gunStartY,
+							gunStartX - gunHeight / 4,
+							gunStartY - gunHeight / 4,
+							gunStartX + gunWidth / 2,
+							gunStartY - gunHeight / 4,
+							gunStartX + gunWidth / 2,
+							gunStartY,
+						])
+						.fill(0x000000)
+						.stroke({ width: 2, color: 0x000000 });
+
+					gunContainer.position.set(17, 25);
+					gunContainer.pivot.set(-9, 4);
+					gunGraphic.pivot.set(config.CELL_SIZE / 2, config.CELL_SIZE / 2);
+					gunContainer.addChild(gunGraphic);
+					graphics.graphic.addChild(gunContainer);
 				}
 
 				if (!drafted.isDrafted) continue;
 
-				const existingRangeGraphic = graphics.graphic.getChildByLabel(
-					"range",
-				) as PIXI.Graphics | undefined;
+				// const existingRangeGraphic = graphics.graphic.getChildByLabel(
+				// 	"range",
+				// ) as PIXI.Graphics | undefined;
 
-				const rangeRadiusGraphic =
-					existingRangeGraphic ||
-					new PIXI.Graphics({
-						label: "range",
-						eventMode: "none",
-					})
-						.circle(
-							config.CELL_SIZE / 2,
-							config.CELL_SIZE / 2,
-							config.CELL_SIZE * (weapon.range - 0.8),
-						)
-						.stroke({
-							width: 1,
-							alpha: 0.2,
-							color: 0xffffff,
-						});
+				// const rangeRadiusGraphic =
+				// 	existingRangeGraphic ||
+				// 	new PIXI.Graphics({
+				// 		label: "range",
+				// 		eventMode: "none",
+				// 	})
+				// 		.circle(
+				// 			config.CELL_SIZE / 2,
+				// 			config.CELL_SIZE / 2,
+				// 			config.CELL_SIZE * (weapon.range - 0.8),
+				// 		)
+				// 		.fill({
+				// 			alpha: 0.05,
+				// 			color: 0xffffff,
+				// 		})
+				// 		.stroke({
+				// 			width: 1,
+				// 			alpha: 0.2,
+				// 			color: 0xffffff,
+				// 		});
+				//
+				// rangeRadiusGraphic.visible = Boolean(weapon.target)
 
-				rangeRadiusGraphic.visible = weapon.isFiring;
-				// rangeRadiusGraphic.visible = false;
-
-				if (!existingRangeGraphic) {
-					graphics.graphic.addChild(rangeRadiusGraphic);
-				}
+				// if (!existingRangeGraphic) {
+				// 	graphics.graphic.addChild(rangeRadiusGraphic);
+				// }
 
 				const existingTargetLineGraphic = graphics.graphic.getChildByLabel(
 					"target line",
@@ -174,92 +178,32 @@ export const WeaponSystem = Effect.gen(function* () {
 				if (!existingTargetLineGraphic) {
 					graphics.graphic.addChild(targetLineGraphic);
 				}
-				// targetLineGraphic.visible = Boolean(weapon.target);
-				targetLineGraphic.visible = false;
+				targetLineGraphic.visible = Boolean(weapon.target);
 
-				const existingBulletsGraphic = graphics.graphic.getChildByLabel(
-					"bullets",
-				) as PIXI.Graphics | undefined;
+				if (!weapon.target) continue;
 
-				const bulletsGraphic =
-					existingBulletsGraphic ||
-					new PIXI.Graphics({
-						label: "bullets",
-					});
-
-				if (!existingBulletsGraphic) {
-					graphics.graphic.addChild(bulletsGraphic);
+				const rotation = Math.atan2(
+					weapon.target.y - position.y,
+					weapon.target.x - position.x,
+				);
+				const gunContainer = graphics.graphic
+					.getChildByLabel("Gun")
+					?.getChildByLabel("Gun Graphic");
+				if (gunContainer) {
+					gunContainer.rotation = rotation;
 				}
 
-				bulletsGraphic
-					.rect(config.CELL_SIZE / 2, config.CELL_SIZE / 2, 1, 1)
-					.fill("white");
-				bulletsGraphic.visible = weapon.bullets.length > 0;
+				targetLineGraphic.clear();
+				targetLineGraphic
+					.moveTo(0, 0)
+					.lineTo(weapon.target.x - position.x, weapon.target.y - position.y)
+					.stroke(0xffffff);
 
-				if (!weapon.target && weapon.bullets.length > 0) {
-					weapon.bullets = [];
-				}
-
-				// bulletsGraphic.bounds.rectangle.contains(weapon)
-
-				if (weapon.target) {
-					if (weapon.bullets.length > 0) {
-						const bullet = weapon.bullets[0];
-						bulletsGraphic.visible = true;
-						if (bullet) {
-							// if (!(Math.abs(bulletsGraphic.x < newX && Math.abs(bulletsGraphic.y) < newY)) {
-							// 	bulletsGraphic.position.set(0, 0)
-							// } else {
-							// }
-							const dx = Math.round(bullet.target.x - bullet.position.x);
-							const dy = Math.round(bullet.target.y - bullet.position.y);
-
-							const now = performance.now();
-							const diff = Math.abs(bullet.timestamp - now);
-
-							// console.log({ diff }, weapon.cooldownTimer, weapon.cooldown)
-
-							if (weapon.cooldownTimer === 0 || diff < weapon.cooldownTimer) {
-								const speed = bullet.speed * 32;
-
-								// bulletsGraphic.visible = false
-								const distance = Math.sqrt(dx * dx + dy * dy);
-								const moveDistance = Math.min(speed, distance);
-								const directionX = dx / distance;
-								const directionY = dy / distance;
-								const newX = Math.round(directionX * moveDistance);
-								const newY = Math.round(directionY * moveDistance);
-
-								bulletsGraphic.x += newX;
-								bulletsGraphic.y += newY;
-
-								console.log({ distance });
-
-								// console.log(bulletsGraphic.x, bullet.target.x, newX)
-								// console.log(bulletsGraphic.y, bullet.target.y, newY)
-
-								// isHit = bulletsGraphic is "over" the cell of the bullet.target position
-								// bulletsGraphic.visible = bulletsGraphic.x < moveDistance && bulletsGraphic.y < moveDistance
-							} else {
-								bulletsGraphic.position.set(0, 0);
-								weapon.bullets = [];
-							}
-						}
-					} else {
-						bulletsGraphic.visible = false;
-					}
-
-					targetLineGraphic.clear();
-					targetLineGraphic
-						.moveTo(0, 0)
-						.lineTo(weapon.target.x - position.x, weapon.target.y - position.y)
-						.stroke(0xffffff);
-
-					targetLineGraphic.position.set(
-						config.CELL_SIZE / 2,
-						config.CELL_SIZE / 2,
-					);
-				}
+				targetLineGraphic.position.set(
+					config.CELL_SIZE / 2,
+					config.CELL_SIZE / 2,
+				);
+				// }
 			}
 		});
 

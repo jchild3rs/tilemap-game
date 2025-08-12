@@ -4,20 +4,18 @@ import { Config } from "./config.ts";
 import { Renderer } from "./renderer.ts";
 import { Stage } from "./stage.ts";
 import { Ticker } from "./ticker.ts";
-import { Tilemap } from "./tilemap.ts";
 
 export const makeViewport = Effect.gen(function* () {
 	const renderer = yield* Renderer;
 	const ticker = yield* Ticker;
 	const stage = yield* Stage;
-	const tilemap = yield* Tilemap;
 	const config = yield* Config;
 
 	const options: IViewportOptions = {
 		screenWidth: window.innerWidth,
 		screenHeight: window.innerHeight,
-		worldWidth: config.CELL_SIZE * tilemap.grid.width,
-		worldHeight: config.CELL_SIZE * tilemap.grid.height,
+		worldWidth: config.worldSize.width,
+		worldHeight: config.worldSize.height,
 		passiveWheel: false,
 		allowPreserveDragOutside: true,
 		events: renderer.events,
@@ -25,6 +23,10 @@ export const makeViewport = Effect.gen(function* () {
 	};
 	yield* Effect.logDebug("creating viewport with options", options);
 	const viewport = stage.addChild(new PIXIViewport(options));
+
+	// const culler = new Culler()
+	// viewport.cullable = true
+	// viewport.cullArea = viewport.boundsArea
 
 	viewport
 		.pinch()
@@ -36,6 +38,10 @@ export const makeViewport = Effect.gen(function* () {
 		.moveCenter(config.worldSize.width / 2, config.worldSize.height / 2);
 
 	yield* Effect.log("created viewport", viewport);
+
+	// ticker.add(() => {
+	// 	culler.cull(viewport, stage)
+	// })
 
 	return viewport;
 });

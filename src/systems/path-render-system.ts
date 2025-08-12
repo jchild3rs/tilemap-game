@@ -5,13 +5,11 @@ import { Effect } from "effect";
 import * as PIXI from "pixi.js";
 import { Config } from "../app/config.ts";
 import { EntityManager } from "../app/entity-manager.ts";
-import { PositionConversion } from "../services/position-conversion.ts";
 import type { System } from "../types.ts";
 
 export const PathRenderSystem = Effect.gen(function* () {
 	const entityManager = yield* EntityManager;
 	const config = yield* Config;
-	const conversion = yield* PositionConversion;
 
 	const update = (_ticker: PIXI.Ticker) =>
 		Effect.gen(function* () {
@@ -27,7 +25,6 @@ export const PathRenderSystem = Effect.gen(function* () {
 				const graphics = entity.getComponent("Graphics");
 				const allPaths = movement.path.flat();
 				const hasPath = movement.path.length > 0;
-				const targetPositions = movement.path.map((p) => p[p.length - 1]);
 
 				const pathLabel = `path line${entity.id}`;
 				const existingPathLineGraphic =
@@ -52,50 +49,7 @@ export const PathRenderSystem = Effect.gen(function* () {
 					graphics.graphic.parent.addChild(pathTargetContainer);
 				}
 
-				const targetGraphicLabel = "path waypoint";
-				const existingTargetGraphic =
-					pathTargetContainer.getChildByLabel(targetGraphicLabel);
-				const targetGraphic = (existingTargetGraphic ||
-					new PIXI.Graphics({ label: targetGraphicLabel })) as PIXI.Graphics;
-				targetGraphic.visible = hasPath;
-				targetGraphic.width = config.CELL_SIZE;
-				targetGraphic.height = config.CELL_SIZE;
-				targetGraphic.circle(0, 0, config.CELL_SIZE / 3).stroke({
-					color: 0xffffff,
-					width: 1,
-					alpha: 0.5,
-				});
-
-				if (targetPositions.length > 0) {
-					pathTargetContainer.removeChildren();
-
-					for (let i = targetPositions.length - 1; i >= 0; i--) {
-						if (!targetPositions[i]) continue;
-						const [gridX, gridY] = targetPositions[i];
-						const tempWaypointGraphic = targetGraphic.clone();
-						pathTargetContainer.addChild(tempWaypointGraphic);
-						tempWaypointGraphic.alpha = i === 1 ? 1 : 0.5;
-						const worldPos = yield* conversion.gridToWorld({
-							x: gridX,
-							y: gridY,
-						});
-						tempWaypointGraphic.position.set(
-							worldPos.x + config.CELL_SIZE / 2,
-							worldPos.y + config.CELL_SIZE / 2,
-						);
-					}
-				}
-
 				if (hasPath) {
-					const targetGridPosition = allPaths[allPaths.length - 1];
-
-					if (targetGridPosition) {
-						targetGraphic.position.set(
-							targetGridPosition[0] * config.CELL_SIZE + config.CELL_SIZE / 2,
-							targetGridPosition[1] * config.CELL_SIZE + config.CELL_SIZE / 2,
-						);
-					}
-
 					pathLineGraphic.clear();
 					pathLineGraphic.moveTo(
 						position.x + config.CELL_SIZE / 2,

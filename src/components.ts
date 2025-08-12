@@ -2,7 +2,6 @@
  * Components are data structs used to compose entities to then be queried by systems.
  */
 import { Data } from "effect";
-import type { Grid } from "pathfinding";
 import type * as PIXI from "pixi.js";
 
 import type { MovementDirection, PositionLiteral } from "./types.ts";
@@ -43,12 +42,6 @@ interface Components {
 		groundType: string;
 		walkable: boolean;
 		cost: number;
-	};
-	Tilemap: {
-		readonly _tag: "Tilemap";
-		readonly width: number;
-		readonly height: number;
-		readonly grid: Grid;
 	};
 	Ground: { readonly _tag: "Ground"; isWalkable: boolean };
 	Objects: { readonly _tag: "Objects" };
@@ -116,7 +109,6 @@ interface Components {
 	};
 	Walkable: {
 		readonly _tag: "Walkable";
-		isWalkable: boolean;
 		weight: number;
 	};
 }
@@ -136,7 +128,6 @@ export namespace Components {
 	export const Movement = Data.tagged<Components["Movement"]>("Movement");
 	export const Input = Data.tagged<Components["Input"]>("Input");
 	export const Ground = Data.tagged<Components["Ground"]>("Ground");
-	export const Tilemap = Data.tagged<Components["Tilemap"]>("Tilemap");
 	export const Objects = Data.tagged<Components["Objects"]>("Objects");
 	export const Tile = Data.tagged<Components["Tile"]>("Tile");
 	export const Walkable = Data.tagged<Components["Walkable"]>("Walkable");

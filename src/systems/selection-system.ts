@@ -131,6 +131,11 @@ export const SelectionSystem = Effect.gen(function* () {
 			for (const selectableGraphic of entities) {
 				const graphics = selectableGraphic.getComponent("Graphics");
 				const selectable = selectableGraphic.getComponent("Selectable");
+				const health = selectableGraphic.getComponent("Health");
+
+				if (health && health.currentHealth === 0) {
+					continue;
+				}
 
 				selectable.isSelected = selectionGraphic
 					.getBounds()

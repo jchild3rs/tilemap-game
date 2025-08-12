@@ -23,8 +23,7 @@ export const WalkableSystem = Effect.gen(function* () {
 					entity.getComponent("Position"),
 				);
 
-				tilemap.setWalkableAt(position.x, position.y, walkable.isWalkable);
-				// tilemap.setWeightAt(position.x, position.y, walkable.weight);
+				tilemap.setCostAt(position.x, position.y, walkable.weight);
 			}
 		});
 

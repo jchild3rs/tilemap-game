@@ -25,8 +25,7 @@ export class WallEntity extends Effect.Service<WallEntity>()("entities/Wall", {
 					action1: "",
 				}),
 				Components.Walkable({
-					isWalkable: false,
-					weight: 1,
+					weight: Infinity,
 				}),
 				// Components.Selectable({
 				// 	isSelected: false,
